@@ -185,7 +185,7 @@ export function WorldCupApp() {
           <div className="wrap hero-grid">
             <div>
               <span className="eyebrow">June 11 – July 19, 2026</span>
-              <h1 className="display">The world <br />is <span className="o">coming</span></h1>
+              <h1 className="display">The biggest <br />stage in <span className="o">football</span></h1>
               <p className="sub">48 nations. 16 cities. One trophy. Follow every fixture, live group standings, and the road to the final across the United States, Canada and Mexico.</p>
               <div className="hero-meta">
                 {([["48", "Teams"], ["104", "Matches"], ["16", "Host Cities"], ["3", "Nations"]] as [string, string][]).map(([n, l]) => (
