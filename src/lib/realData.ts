@@ -91,7 +91,7 @@ export function buildFromDB(
   // 1. Teams record
   const teams: Record<string, Team> = {};
   dbTeams.forEach(t => {
-    teams[t.code] = { code: t.code, n: t.name, f: t.flag, s: t.strength };
+    teams[t.code] = { code: t.code, n: t.name, f: t.flag, iso: t.country_code || undefined, s: t.strength };
   });
 
   // 2. id → code maps

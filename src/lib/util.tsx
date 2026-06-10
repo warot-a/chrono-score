@@ -1,5 +1,4 @@
 import { Tournament, Match, StandingRow } from '@/lib/engine';
-import React from 'react';
 
 const LIVE_MS = 2 * 3600 * 1000;
 
@@ -132,6 +131,20 @@ export function groupColor(g: string): string {
 }
 
 export function Flag({ code, tour, size }: { code: string; tour: Tournament; size?: string }) {
-  const f = tour.teams[code] ? tour.teams[code].f : "🏳️";
-  return <span className="flag" style={size ? { fontSize: size } : undefined}>{f}</span>;
+  const team = tour.teams[code];
+  const iso = team?.iso?.toLowerCase();
+  const px = size ? parseInt(size, 10) : 20;
+  if (iso) {
+    return (
+      <img
+        src={`https://flagcdn.com/w40/${iso}.png`}
+        alt={team.n}
+        width={px * 1.5}
+        height={px}
+        className="flag-img"
+        style={{ display: 'inline-block', verticalAlign: 'middle', objectFit: 'cover' }}
+      />
+    );
+  }
+  return <span className="flag" style={size ? { fontSize: size } : undefined}>{team?.f ?? "🏳️"}</span>;
 }

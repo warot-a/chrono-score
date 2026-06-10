@@ -3,32 +3,32 @@
    Ported from design/data/engine.js for Next.js
 ============================================================================ */
 
-// --- Teams: name, flag emoji, 3-letter code, strength rating (~55..93) -----
-const T: Record<string, { n: string; f: string; s: number; h?: boolean }> = {
-  MEX:{n:"Mexico",f:"🇲🇽",s:76,h:true}, RSA:{n:"South Africa",f:"🇿🇦",s:66},
-  KOR:{n:"South Korea",f:"🇰🇷",s:75}, CZE:{n:"Czechia",f:"🇨🇿",s:75},
-  CAN:{n:"Canada",f:"🇨🇦",s:74,h:true}, BIH:{n:"Bosnia & Herz.",f:"🇧🇦",s:73},
-  QAT:{n:"Qatar",f:"🇶🇦",s:67}, SUI:{n:"Switzerland",f:"🇨🇭",s:79},
-  BRA:{n:"Brazil",f:"🇧🇷",s:88}, MAR:{n:"Morocco",f:"🇲🇦",s:82},
-  HAI:{n:"Haiti",f:"🇭🇹",s:60}, SCO:{n:"Scotland",f:"🏴󠁧󠁢󠁳󠁣󠁴󠁿",s:73},
-  USA:{n:"United States",f:"🇺🇸",s:78,h:true}, PAR:{n:"Paraguay",f:"🇵🇾",s:72},
-  AUS:{n:"Australia",f:"🇦🇺",s:71}, TUR:{n:"Türkiye",f:"🇹🇷",s:77},
-  GER:{n:"Germany",f:"🇩🇪",s:85}, CUW:{n:"Curaçao",f:"🇨🇼",s:59},
-  CIV:{n:"Ivory Coast",f:"🇨🇮",s:75}, ECU:{n:"Ecuador",f:"🇪🇨",s:77},
-  NED:{n:"Netherlands",f:"🇳🇱",s:85}, JPN:{n:"Japan",f:"🇯🇵",s:78},
-  SWE:{n:"Sweden",f:"🇸🇪",s:76}, TUN:{n:"Tunisia",f:"🇹🇳",s:69},
-  BEL:{n:"Belgium",f:"🇧🇪",s:83}, EGY:{n:"Egypt",f:"🇪🇬",s:74},
-  IRN:{n:"Iran",f:"🇮🇷",s:72}, NZL:{n:"New Zealand",f:"🇳🇿",s:60},
-  ESP:{n:"Spain",f:"🇪🇸",s:92}, CPV:{n:"Cape Verde",f:"🇨🇻",s:62},
-  KSA:{n:"Saudi Arabia",f:"🇸🇦",s:66}, URU:{n:"Uruguay",f:"🇺🇾",s:82},
-  FRA:{n:"France",f:"🇫🇷",s:90}, SEN:{n:"Senegal",f:"🇸🇳",s:80},
-  IRQ:{n:"Iraq",f:"🇮🇶",s:65}, NOR:{n:"Norway",f:"🇳🇴",s:79},
-  ARG:{n:"Argentina",f:"🇦🇷",s:91}, ALG:{n:"Algeria",f:"🇩🇿",s:73},
-  AUT:{n:"Austria",f:"🇦🇹",s:76}, JOR:{n:"Jordan",f:"🇯🇴",s:64},
-  POR:{n:"Portugal",f:"🇵🇹",s:86}, COD:{n:"DR Congo",f:"🇨🇩",s:70},
-  UZB:{n:"Uzbekistan",f:"🇺🇿",s:67}, COL:{n:"Colombia",f:"🇨🇴",s:81},
-  ENG:{n:"England",f:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",s:88}, CRO:{n:"Croatia",f:"🇭🇷",s:82},
-  GHA:{n:"Ghana",f:"🇬🇭",s:72}, PAN:{n:"Panama",f:"🇵🇦",s:66}
+// --- Teams: name, flag emoji, ISO 3166-1 alpha-2 code, 3-letter code, strength rating (~55..93) -----
+const T: Record<string, { n: string; f: string; iso: string; s: number; h?: boolean }> = {
+  MEX:{n:"Mexico",f:"🇲🇽",iso:"mx",s:76,h:true}, RSA:{n:"South Africa",f:"🇿🇦",iso:"za",s:66},
+  KOR:{n:"South Korea",f:"🇰🇷",iso:"kr",s:75}, CZE:{n:"Czechia",f:"🇨🇿",iso:"cz",s:75},
+  CAN:{n:"Canada",f:"🇨🇦",iso:"ca",s:74,h:true}, BIH:{n:"Bosnia & Herz.",f:"🇧🇦",iso:"ba",s:73},
+  QAT:{n:"Qatar",f:"🇶🇦",iso:"qa",s:67}, SUI:{n:"Switzerland",f:"🇨🇭",iso:"ch",s:79},
+  BRA:{n:"Brazil",f:"🇧🇷",iso:"br",s:88}, MAR:{n:"Morocco",f:"🇲🇦",iso:"ma",s:82},
+  HAI:{n:"Haiti",f:"🇭🇹",iso:"ht",s:60}, SCO:{n:"Scotland",f:"🏴󠁧󠁢󠁳󠁣󠁴󠁿",iso:"gb-sct",s:73},
+  USA:{n:"United States",f:"🇺🇸",iso:"us",s:78,h:true}, PAR:{n:"Paraguay",f:"🇵🇾",iso:"py",s:72},
+  AUS:{n:"Australia",f:"🇦🇺",iso:"au",s:71}, TUR:{n:"Türkiye",f:"🇹🇷",iso:"tr",s:77},
+  GER:{n:"Germany",f:"🇩🇪",iso:"de",s:85}, CUW:{n:"Curaçao",f:"🇨🇼",iso:"cw",s:59},
+  CIV:{n:"Ivory Coast",f:"🇨🇮",iso:"ci",s:75}, ECU:{n:"Ecuador",f:"🇪🇨",iso:"ec",s:77},
+  NED:{n:"Netherlands",f:"🇳🇱",iso:"nl",s:85}, JPN:{n:"Japan",f:"🇯🇵",iso:"jp",s:78},
+  SWE:{n:"Sweden",f:"🇸🇪",iso:"se",s:76}, TUN:{n:"Tunisia",f:"🇹🇳",iso:"tn",s:69},
+  BEL:{n:"Belgium",f:"🇧🇪",iso:"be",s:83}, EGY:{n:"Egypt",f:"🇪🇬",iso:"eg",s:74},
+  IRN:{n:"Iran",f:"🇮🇷",iso:"ir",s:72}, NZL:{n:"New Zealand",f:"🇳🇿",iso:"nz",s:60},
+  ESP:{n:"Spain",f:"🇪🇸",iso:"es",s:92}, CPV:{n:"Cape Verde",f:"🇨🇻",iso:"cv",s:62},
+  KSA:{n:"Saudi Arabia",f:"🇸🇦",iso:"sa",s:66}, URU:{n:"Uruguay",f:"🇺🇾",iso:"uy",s:82},
+  FRA:{n:"France",f:"🇫🇷",iso:"fr",s:90}, SEN:{n:"Senegal",f:"🇸🇳",iso:"sn",s:80},
+  IRQ:{n:"Iraq",f:"🇮🇶",iso:"iq",s:65}, NOR:{n:"Norway",f:"🇳🇴",iso:"no",s:79},
+  ARG:{n:"Argentina",f:"🇦🇷",iso:"ar",s:91}, ALG:{n:"Algeria",f:"🇩🇿",iso:"dz",s:73},
+  AUT:{n:"Austria",f:"🇦🇹",iso:"at",s:76}, JOR:{n:"Jordan",f:"🇯🇴",iso:"jo",s:64},
+  POR:{n:"Portugal",f:"🇵🇹",iso:"pt",s:86}, COD:{n:"DR Congo",f:"🇨🇩",iso:"cd",s:70},
+  UZB:{n:"Uzbekistan",f:"🇺🇿",iso:"uz",s:67}, COL:{n:"Colombia",f:"🇨🇴",iso:"co",s:81},
+  ENG:{n:"England",f:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",iso:"gb-eng",s:88}, CRO:{n:"Croatia",f:"🇭🇷",iso:"hr",s:82},
+  GHA:{n:"Ghana",f:"🇬🇭",iso:"gh",s:72}, PAN:{n:"Panama",f:"🇵🇦",iso:"pa",s:66}
 };
 
 const GROUPS: Record<string, string[]> = {
@@ -96,7 +96,7 @@ const MD_DAY: Record<number, Record<string, number>> = {
 const KICK = [12,15,18,21];
 
 export interface Team {
-  code: string; n: string; f: string; s: number; h?: boolean;
+  code: string; n: string; f: string; iso?: string; s: number; h?: boolean;
 }
 export interface Venue {
   city: string; stad: string; cc: string;
