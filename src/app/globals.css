@@ -354,3 +354,8 @@ tr.out { opacity: .5; }
   .vrow { justify-content: flex-start; }
   .mteam.home { justify-content: flex-start; text-align: left; flex-direction: row-reverse; }
 }
+
+.site-footer { border-top: 1px solid var(--line); padding: 20px 0; margin-top: 48px; }
+.site-footer .wrap { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.site-footer a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); transition: color .15s, border-color .15s; }
+.site-footer a:hover { color: var(--gold); border-color: var(--gold); }

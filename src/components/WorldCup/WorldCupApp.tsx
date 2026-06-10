@@ -7,6 +7,7 @@ import { useTournament } from '@/hooks/useTournament';
 import { ScheduleView } from './ScheduleView';
 import { StandingsView } from './StandingsView';
 import { BracketView } from './BracketView';
+import { SiteFooter } from './SiteFooter';
 
 function fmtNow(t: number): string {
   return new Date(t).toLocaleDateString("en-US", {
@@ -208,6 +209,9 @@ export function WorldCupApp() {
               : <BracketView tour={tour} now={nowTs} />}
         </div>
       </main>
+
+      {/* ---------- Footer ---------- */}
+      <SiteFooter />
     </>
   );
 }
