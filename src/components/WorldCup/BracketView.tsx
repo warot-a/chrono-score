@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import { useState, useRef, useCallback, useLayoutEffect, MutableRefObject } from 'react';
 import { Tournament } from '@/lib/engine';
-import { Flag, matchView, koTeams, koFT } from '@/lib/util';
+import { Flag, matchView, koFT } from '@/lib/util';
 
 const L_R32 = [74, 77, 73, 75, 83, 84, 81, 82];
 const L_R16 = [89, 90, 93, 94];
@@ -63,7 +63,7 @@ function BracketCard({ tour, no, now, cardRef, small }: {
 function Column({ tour, nos, now, label, range, cardRefs, treeH }: {
   tour: Tournament; nos: number[]; now: number;
   label: string; range?: string;
-  cardRefs: React.MutableRefObject<Record<number, HTMLDivElement | null>>;
+  cardRefs: MutableRefObject<Record<number, HTMLDivElement | null>>;
   treeH: number;
 }) {
   return (
@@ -85,12 +85,12 @@ function Column({ tour, nos, now, label, range, cardRefs, treeH }: {
 }
 
 export function BracketView({ tour, now }: { tour: Tournament; now: number }) {
-  const cardRefs = React.useRef<Record<number, HTMLDivElement | null>>({});
-  const innerRef = React.useRef<HTMLDivElement>(null);
-  const [lines, setLines] = React.useState<{ paths: { d: string; on: boolean }[]; w: number; h: number }>({ paths: [], w: 0, h: 0 });
+  const cardRefs = useRef<Record<number, HTMLDivElement | null>>({});
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [lines, setLines] = useState<{ paths: { d: string; on: boolean }[]; w: number; h: number }>({ paths: [], w: 0, h: 0 });
   const treeH = 780;
 
-  const recompute = React.useCallback(() => {
+  const recompute = useCallback(() => {
     const inner = innerRef.current; if (!inner) return;
     const ir = inner.getBoundingClientRect();
     const paths: { d: string; on: boolean }[] = [];
@@ -115,7 +115,7 @@ export function BracketView({ tour, now }: { tour: Tournament; now: number }) {
     setLines({ paths, w: inner.scrollWidth, h: inner.scrollHeight });
   }, [tour, now]);
 
-  React.useLayoutEffect(() => {
+  useLayoutEffect(() => {
     recompute();
     const t = setTimeout(recompute, 120);
     window.addEventListener("resize", recompute);

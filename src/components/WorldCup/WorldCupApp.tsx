@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import { useState, useEffect, CSSProperties } from 'react';
 import { phaseForDay, matchView } from '@/lib/util';
 import { useTournament } from '@/hooks/useTournament';
 import { ScheduleView } from './ScheduleView';
@@ -20,19 +20,19 @@ function fmtNow(t: number): string {
 export function WorldCupApp() {
   const { tour, isLive } = useTournament();
 
-  const [tab, setTab] = React.useState(() => {
+  const [tab, setTab] = useState(() => {
     if (typeof window === 'undefined') { return 'schedule'; }
     return localStorage.getItem('wc_tab') || 'schedule';
   });
-  const [nowDay, setNowDay] = React.useState(() => {
+  const [nowDay, setNowDay] = useState(() => {
     if (typeof window === 'undefined') { return 0; }
     const saved = parseFloat(localStorage.getItem('wc_now') || '');
     return !isNaN(saved) ? saved : Math.min(39, Math.max(0, (Date.now() - tour.DAY0) / tour.DAYMS));
   });
-  const [playing, setPlaying] = React.useState(false);
+  const [playing, setPlaying] = useState(false);
 
   // When live data loads, snap the clock to real time (setState in effect is intentional here)
-  React.useEffect(() => {
+  useEffect(() => {
     if (isLive) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setNowDay(Math.min(39, Math.max(0, (Date.now() - tour.DAY0) / tour.DAYMS)));
@@ -40,7 +40,7 @@ export function WorldCupApp() {
   }, [isLive, tour.DAY0, tour.DAYMS]);
 
   // Advance real-time clock every 30 s when in live mode (no slider interaction)
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isLive) return;
     const id = setInterval(() => {
       setNowDay(Math.min(39, (Date.now() - tour.DAY0) / tour.DAYMS));
@@ -50,10 +50,10 @@ export function WorldCupApp() {
 
   const nowTs = tour.DAY0 + nowDay * tour.DAYMS;
 
-  React.useEffect(() => { localStorage.setItem("wc_tab", tab); }, [tab]);
-  React.useEffect(() => { localStorage.setItem("wc_now", String(nowDay)); }, [nowDay]);
+  useEffect(() => { localStorage.setItem("wc_tab", tab); }, [tab]);
+  useEffect(() => { localStorage.setItem("wc_now", String(nowDay)); }, [nowDay]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!playing) return;
     const id = setInterval(() => {
       setNowDay(d => {
@@ -101,7 +101,7 @@ export function WorldCupApp() {
           <div className="slider">
             <input
               type="range" min={0} max={39} step={0.25} value={nowDay}
-              style={{ "--p": sliderPct + "%" } as React.CSSProperties}
+              style={{ "--p": sliderPct + "%" } as CSSProperties}
               onChange={e => { setPlaying(false); setNowDay(parseFloat(e.target.value)); }}
             />
           </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import { useState } from 'react';
 import { Tournament, Match } from '@/lib/engine';
 import { Flag, matchView, groupColor } from '@/lib/util';
 
@@ -72,8 +72,8 @@ export function MatchRow({ tour, m, now, showDate }: { tour: Tournament; m: Matc
 }
 
 export function ScheduleView({ tour, now }: { tour: Tournament; now: number }) {
-  const [stage, setStage] = React.useState("all");
-  const [grp, setGrp] = React.useState("all");
+  const [stage, setStage] = useState("all");
+  const [grp, setGrp] = useState("all");
 
   const stageTabs = [["all", "All"], ["group", "Groups"], ["R32", "Round of 32"], ["R16", "Round of 16"], ["QF", "Quarter"], ["SF", "Semis"], ["FIN", "Final"]];
 

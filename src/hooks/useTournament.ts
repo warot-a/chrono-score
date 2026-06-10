@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Tournament } from '@/lib/engine';
-import { build } from '@/lib/engine';
-import { buildFromDB } from '@/lib/realData';
-import { supabase, DBMatch } from '@/lib/supabase';
+import { useState, useRef, useCallback, useEffect } from "react";
+import { Tournament } from "@/lib/engine";
+import { build } from "@/lib/engine";
+import { buildFromDB } from "@/lib/realData";
+import { supabase, DBMatch } from "@/lib/supabase";
 
-const SLUG = 'worldcup-2026';
+const SLUG = "worldcup-2026";
 const FALLBACK_SEED = 3;
 
 interface TournamentState {
@@ -24,32 +24,37 @@ interface TournamentState {
  * (useful in local dev without a Supabase project).
  */
 export function useTournament(): TournamentState {
-  const [state, setState] = React.useState<TournamentState>(() => ({
+  const [state, setState] = useState<TournamentState>(() => ({
     tour: build(FALLBACK_SEED),
     isLive: false,
     loading: true,
   }));
 
   // Store raw DB payloads so we can re-build Tournament on Realtime updates
-  const rawRef = React.useRef<{
+  const rawRef = useRef<{
     teams: unknown[];
     tournamentTeams: unknown[];
     matches: DBMatch[];
     venues: unknown[];
   } | null>(null);
 
-  const rebuildFromRaw = React.useCallback(() => {
+  const rebuildFromRaw = useCallback(() => {
     if (!rawRef.current) return;
     const { teams, tournamentTeams, matches, venues } = rawRef.current;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tour = buildFromDB(teams as any, tournamentTeams as any, matches as any, venues as any);
+    const tour = buildFromDB(
+      teams as any,
+      tournamentTeams as any,
+      matches as any,
+      venues as any,
+    );
     setState({ tour, isLive: true, loading: false });
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     // Skip if Supabase isn't configured (local dev without .env.local)
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-      setState(s => ({ ...s, loading: false }));
+      setState((s) => ({ ...s, loading: false }));
       return;
     }
 
@@ -58,14 +63,14 @@ export function useTournament(): TournamentState {
     async function load() {
       try {
         const res = await fetch(`/api/matches?slug=${SLUG}`);
-        if (!res.ok) throw new Error('API error');
+        if (!res.ok) throw new Error("API error");
         const data = await res.json();
         if (cancelled) return;
         rawRef.current = data;
         rebuildFromRaw();
       } catch {
         // Supabase not set up yet — keep simulation
-        if (!cancelled) setState(s => ({ ...s, loading: false }));
+        if (!cancelled) setState((s) => ({ ...s, loading: false }));
       }
     }
 
@@ -73,17 +78,17 @@ export function useTournament(): TournamentState {
 
     // Subscribe to Realtime match updates
     const channel = supabase
-      .channel('matches-live')
+      .channel("matches-live")
       .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'matches' },
+        "postgres_changes",
+        { event: "*", schema: "public", table: "matches" },
         (payload) => {
           if (!rawRef.current) return;
           const updated = payload.new as DBMatch;
           rawRef.current = {
             ...rawRef.current,
-            matches: rawRef.current.matches.map(m =>
-              m.id === updated.id ? updated : m
+            matches: rawRef.current.matches.map((m) =>
+              m.id === updated.id ? updated : m,
             ),
           };
           rebuildFromRaw();

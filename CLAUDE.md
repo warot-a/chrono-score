@@ -18,6 +18,7 @@ No test suite is set up yet.
 - Single quotes
 - Named exports (no default exports except Next.js pages/layouts)
 - Curly braces even for single-line `if`/`else` bodies
+- Import React hooks and types as named imports: `import { useState, useEffect } from 'react'` instead of `React.useState`
 
 ## Architecture
 
