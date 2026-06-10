@@ -21,7 +21,15 @@ No test suite is set up yet.
 
 ## Architecture
 
-**chrono-score** is a single-page Next.js 16 app that simulates the FIFA World Cup 2026 tournament. There are no backend routes or database — everything is computed deterministically client-side.
+**chrono-score** is a single-page Next.js 16 app that simulates the FIFA World Cup 2026 tournament. The tournament engine runs deterministically client-side, but match data and real-time updates are backed by **Supabase** (Postgres + Realtime).
+
+### Database
+
+`supabase/migrations/001_schema.sql` — defines tables: `sports`, `tournaments`, `teams`, `venues`, `tournament_teams`, `matches`. All tables have RLS enabled with public read access. `matches` uses `REPLICA IDENTITY FULL` for Realtime UPDATE events.
+
+`supabase/migrations/002_seed_wc2026.sql` — seeds World Cup 2026 data.
+
+`src/lib/supabase.ts` — exports `supabase` (anon client, browser/RSC) and `supabaseAdmin()` (service-role client, server-only for `/api/sync`). Also exports row types: `DBMatch`, `DBTeam`, `DBVenue`, `DBTournamentTeam`.
 
 ### Core data flow
 
@@ -32,9 +40,13 @@ No test suite is set up yet.
 - `liveStandings(tour, g, now)` — standings for group `g` considering only matches played so far
 - `phaseForDay(nowDay)` — returns `[shortLabel, longLabel]` for the current tournament phase
 
-`src/app/page.tsx` — mounts `<WorldCupApp seed={3} />`. Change the seed here to get a different tournament outcome.
+`src/hooks/useTournament.ts` — fetches match data from `/api/matches?slug=worldcup-2026`, then subscribes to Supabase Realtime for live score updates. Falls back to `build(FALLBACK_SEED)` (seed `3`) when `NEXT_PUBLIC_SUPABASE_URL` is not set. Returns `{ tour, isLive, loading }`.
+
+`src/app/page.tsx` — entry point, mounts `<WorldCupApp />` (no props). To change the fallback seed, edit `FALLBACK_SEED` in `useTournament.ts`.
 
 ### Component tree
+
+Components live in `src/components/WorldCup/`.
 
 ```
 WorldCupApp          — clock bar, tab nav, "now" slider state
@@ -43,7 +55,7 @@ WorldCupApp          — clock bar, tab nav, "now" slider state
   └── BracketView    — knockout bracket visualisation
 ```
 
-`WorldCupApp` holds the two key pieces of state: `tab` (active view) and `nowDay` (a float 0–39 representing days elapsed since Jun 11, 2026). Both are persisted to `localStorage`. A "play" button animates `nowDay` forward, simulating the tournament unfolding in real time. `nowTs` (a UTC millisecond timestamp) is derived from `nowDay` and passed down to all views.
+`WorldCupApp` holds the two key pieces of state: `tab` (active view) and `nowDay` (a float 0–39 representing days elapsed since Jun 11, 2026). Both are persisted to `localStorage`. A "play" button animates `nowDay` forward. When `isLive` is true, the clock auto-syncs to real time every 30 s. `nowTs` (a UTC millisecond timestamp) is derived from `nowDay` and passed down to all views.
 
 ### Styling
 

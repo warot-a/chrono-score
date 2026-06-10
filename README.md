@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# chrono-score
+
+A single-page Next.js app that simulates the FIFA World Cup 2026 tournament. The tournament engine runs deterministically from a seed value using a seeded PRNG + Poisson goal model, with real-time data sync backed by Supabase.
+
+## Features
+
+- Simulates all 104 matches (group stage + knockout bracket)
+- Time-travel slider: scrub through the tournament day by day
+- Live standings that update as matches are "played"
+- Schedule, Standings, and Bracket views
+- State (current tab + day) persisted to `localStorage`
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-npm run dev
-# or
-yarn dev
-# or
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Without Supabase env vars configured, the app falls back to a seeded simulation (seed `3`). To change the fallback seed, edit `FALLBACK_SEED` in `src/hooks/useTournament.ts`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+pnpm dev      # Start dev server
+pnpm build    # Production build
+pnpm lint     # ESLint
+```
 
-## Learn More
+## Architecture
 
-To learn more about Next.js, take a look at the following resources:
+### Core modules
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **`src/lib/engine.ts`** — tournament engine. `build(seed)` returns a fully-simulated `Tournament` with all matches, standings, and knockout results.
+- **`src/lib/util.tsx`** — time-relative helpers: `matchView`, `liveStandings`, `phaseForDay`.
+- **`src/hooks/useTournament.ts`** — fetches data from `/api/matches`, subscribes to Supabase Realtime for live score updates, and falls back to `build(FALLBACK_SEED)` if Supabase isn't configured.
+- **`src/app/page.tsx`** — entry point, mounts `<WorldCupApp />`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Component tree
 
-## Deploy on Vercel
+```
+WorldCupApp          — clock bar, tab nav, "now" slider state
+  ├── ScheduleView   — match list grouped by date/round
+  ├── StandingsView  — 12 group cards + best-thirds table
+  └── BracketView    — knockout bracket visualisation
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Styling
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Tailwind v4 + custom CSS variables in `src/app/globals.css`. Fonts: Anton (headings) and Archivo (body) via `next/font/google`.
+
+## Tech Stack
+
+- [Next.js 16](https://nextjs.org)
+- [Tailwind CSS v4](https://tailwindcss.com)
+- [Supabase](https://supabase.com) (Postgres + Realtime)
+- TypeScript
