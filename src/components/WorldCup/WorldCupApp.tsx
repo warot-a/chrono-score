@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, CSSProperties } from 'react';
+import { useState, CSSProperties } from 'react';
 import { phaseForDay, matchView } from '@/lib/util';
 import { useTournament } from '@/hooks/useTournament';
+import { useClockState } from '@/hooks/useClockState';
 import { ScheduleView } from './ScheduleView';
 import { StandingsView } from './StandingsView';
 import { BracketView } from './BracketView';
@@ -20,50 +21,13 @@ function fmtNow(t: number): string {
 export function WorldCupApp() {
   const { tour, isLive } = useTournament();
 
-  const [tab, setTab] = useState(() => {
+  const [tab, _setTab] = useState(() => {
     if (typeof window === 'undefined') { return 'schedule'; }
     return localStorage.getItem('wc_tab') || 'schedule';
   });
-  const [nowDay, setNowDay] = useState(() => {
-    if (typeof window === 'undefined') { return 0; }
-    const saved = parseFloat(localStorage.getItem('wc_now') || '');
-    return !isNaN(saved) ? saved : Math.min(39, Math.max(0, (Date.now() - tour.DAY0) / tour.DAYMS));
-  });
-  const [playing, setPlaying] = useState(false);
+  const setTab = (v: string) => { _setTab(v); localStorage.setItem('wc_tab', v); };
 
-  // When live data loads, snap the clock to real time (setState in effect is intentional here)
-  useEffect(() => {
-    if (isLive) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setNowDay(Math.min(39, Math.max(0, (Date.now() - tour.DAY0) / tour.DAYMS)));
-    }
-  }, [isLive, tour.DAY0, tour.DAYMS]);
-
-  // Advance real-time clock every 30 s when in live mode (no slider interaction)
-  useEffect(() => {
-    if (!isLive) return;
-    const id = setInterval(() => {
-      setNowDay(Math.min(39, (Date.now() - tour.DAY0) / tour.DAYMS));
-    }, 30_000);
-    return () => clearInterval(id);
-  }, [isLive, tour.DAY0, tour.DAYMS]);
-
-  const nowTs = tour.DAY0 + nowDay * tour.DAYMS;
-
-  useEffect(() => { localStorage.setItem("wc_tab", tab); }, [tab]);
-  useEffect(() => { localStorage.setItem("wc_now", String(nowDay)); }, [nowDay]);
-
-  useEffect(() => {
-    if (!playing) return;
-    const id = setInterval(() => {
-      setNowDay(d => {
-        const nd = d + 0.3;
-        if (nd >= 39) { setPlaying(false); return 39; }
-        return nd;
-      });
-    }, 80);
-    return () => clearInterval(id);
-  }, [playing]);
+  const { nowDay, setNowDay, playing, setPlaying, nowTs } = useClockState(tour, isLive);
 
   const phase = phaseForDay(nowDay);
   const liveCount = tour.matches.filter(m => { const v = matchView(tour, m, nowTs); return v.live; }).length;
