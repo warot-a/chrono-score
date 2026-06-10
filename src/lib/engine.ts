@@ -80,12 +80,12 @@ const DAYMS = 86400000;
 function ts(day: number, hourLocal?: number){ return DAY0 + day*DAYMS + (hourLocal||0)*3600000; }
 function dstr(t: number){
   const d = new Date(t);
-  return d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",timeZone:"UTC"});
+  return d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
 }
 function tstr(t: number){
   const d = new Date(t);
-  let h = d.getUTCHours(); const ap = h>=12?"PM":"AM"; h = h%12||12;
-  return h+":"+String(d.getUTCMinutes()).padStart(2,"0")+" "+ap;
+  let h = d.getHours(); const ap = h>=12?"PM":"AM"; h = h%12||12;
+  return h+":"+String(d.getMinutes()).padStart(2,"0")+" "+ap;
 }
 
 const MD_DAY: Record<number, Record<string, number>> = {

@@ -31,8 +31,8 @@ export function MatchRow({ tour, m, now, showDate }: { tour: Tournament; m: Matc
     ? <span className="gbadge" style={{ background: groupColor(m.group!) }}>{m.group}</span>
     : <span className="rtag">{ROUND_ABBR[m.round] || "KO"}</span>;
   const d = new Date(m.t);
-  const time = (() => { let h = d.getUTCHours(); const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; return h + ":" + String(d.getUTCMinutes()).padStart(2, "0") + " " + ap; })();
-  const dateShort = d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  const time = (() => { let h = d.getHours(); const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; return h + ":" + String(d.getMinutes()).padStart(2, "0") + " " + ap; })();
+  const dateShort = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
   const status = v.live ? <span className="stat live">● LIVE</span>
     : v.played ? <span className="stat ft">FULL TIME</span>
@@ -120,8 +120,8 @@ export function ScheduleView({ tour, now }: { tour: Tournament; now: number }) {
       {byDay.length === 0 ? <div className="empty">No matches in this view.</div> :
         byDay.map(day => {
           const dd = new Date(day.t);
-          const dn = dd.toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
-          const dl = dd.toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
+          const dn = dd.toLocaleDateString("en-US", { weekday: "long" });
+          const dl = dd.toLocaleDateString("en-US", { month: "long", day: "numeric" });
           const ph = (() => {
             const dayN = (day.t - tour.DAY0) / tour.DAYMS;
             if (dayN < 7) return "Matchday 1";

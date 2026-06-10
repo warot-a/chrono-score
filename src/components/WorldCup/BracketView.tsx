@@ -16,9 +16,9 @@ const FINAL = 104;
 
 function fmtRange(t1: number, t2: number): string {
   const a = new Date(t1), b = new Date(t2);
-  const ma = a.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
-  const mb = b.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
-  return ma === mb ? `${ma} ${a.getUTCDate()}–${b.getUTCDate()}` : `${ma} ${a.getUTCDate()} – ${mb} ${b.getUTCDate()}`;
+  const ma = a.toLocaleDateString("en-US", { month: "short" });
+  const mb = b.toLocaleDateString("en-US", { month: "short" });
+  return ma === mb ? `${ma} ${a.getDate()}–${b.getDate()}` : `${ma} ${a.getDate()} – ${mb} ${b.getDate()}`;
 }
 
 function BracketCard({ tour, no, now, cardRef, small }: {
@@ -28,7 +28,7 @@ function BracketCard({ tour, no, now, cardRef, small }: {
   const m = tour.ko[no];
   const v = matchView(tour, m, now);
   const d = new Date(m.t);
-  const dlabel = d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  const dlabel = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
   function row(code: string | null, label: string, score: number, isWin: boolean) {
     return (
