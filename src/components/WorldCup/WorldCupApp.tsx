@@ -1,13 +1,14 @@
 'use client';
 
 import React from 'react';
-import { Tournament } from '@/lib/engine';
-import { phaseForDay, matchView, Flag } from '@/lib/util';
+import { phaseForDay, matchView } from '@/lib/util';
 import { useTournament } from '@/hooks/useTournament';
 import { ScheduleView } from './ScheduleView';
 import { StandingsView } from './StandingsView';
 import { BracketView } from './BracketView';
 import { SiteFooter } from './SiteFooter';
+import { HeroSection } from './HeroSection';
+import { SiteHeader } from './SiteHeader';
 
 function fmtNow(t: number): string {
   return new Date(t).toLocaleDateString("en-US", {
@@ -15,52 +16,6 @@ function fmtNow(t: number): string {
   });
 }
 
-function PulseCard({ tour, nowTs, phase, playedCount }: {
-  tour: Tournament; nowTs: number;
-  phase: [string, string]; playedCount: number;
-}) {
-  const fin = matchView(tour, tour.ko[104], nowTs);
-  const champ = fin.played ? fin.winnerCode : null;
-  const upcoming = tour.matches.find(m => {
-    const v = matchView(tour, m, nowTs);
-    return !v.played && v.hCode && v.aCode;
-  });
-  const pct = Math.round((playedCount / 104) * 100);
-
-  return (
-    <div className="hero-card">
-      <div className="pc-top">
-        <span className="pc-eye">Tournament pulse</span>
-        <span className="pc-phase">{phase[1]}</span>
-      </div>
-      <div className="pc-bar">
-        <div className="pc-fill" style={{ width: pct + "%" }} />
-      </div>
-      <div className="pc-prog">{playedCount} of 104 matches played</div>
-      {champ ? (
-        <div className="pc-champ">
-          <div className="pc-troph">🏆</div>
-          <div>
-            <div className="pc-lbl">World Champions</div>
-            <div className="pc-team"><Flag code={champ} tour={tour} /> {tour.teams[champ].n}</div>
-          </div>
-        </div>
-      ) : upcoming ? (
-        <div className="pc-next">
-          <div className="pc-lbl">Coming up</div>
-          <div className="pc-match">
-            <Flag code={upcoming.home} tour={tour} />
-            <span className="pc-vs">vs</span>
-            <Flag code={upcoming.away} tour={tour} />
-          </div>
-          <div className="pc-mt">
-            {(tour.teams[upcoming.home]?.n || "") + " · " + upcoming.city}
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
-}
 
 export function WorldCupApp() {
   const { tour, isLive } = useTournament();
@@ -119,27 +74,10 @@ export function WorldCupApp() {
     ["Quarters", 28.4], ["Semis", 33.4], ["Final", 38.4], ["Done", 39]
   ];
   const sliderPct = Math.round((nowDay / 39) * 100);
-  const TABS: [string, string][] = [["schedule", "Schedule"], ["standings", "Standings"], ["bracket", "Bracket"]];
-
   return (
     <>
       {/* ---------- Header ---------- */}
-      <header className="site">
-        <div className="wrap hrow">
-          <div className="logo">
-            <div className="mark"><b>26</b></div>
-            <div className="wordmark">
-              <span className="a">WORLD CUP</span>
-              <span className="b">2026 · USA · CAN · MEX</span>
-            </div>
-          </div>
-          <nav className="tabs">
-            {TABS.map(([k, lbl]) => (
-              <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{lbl}</button>
-            ))}
-          </nav>
-        </div>
-      </header>
+      <SiteHeader tab={tab} setTab={setTab} />
 
       {/* ---------- Clock bar ---------- */}
       <div className="clock">
@@ -180,33 +118,14 @@ export function WorldCupApp() {
       </div>
 
       {/* ---------- Hero (schedule tab only) ---------- */}
-      {tab === "schedule" ? (
-        <section className="hero">
-          <div className="wrap hero-grid">
-            <div>
-              <span className="eyebrow">June 11 – July 19, 2026</span>
-              <h1 className="display">The biggest <br />stage in <span className="o">football</span></h1>
-              <p className="sub">48 nations. 16 cities. One trophy. Follow every fixture, live group standings, and the road to the final across the United States, Canada and Mexico.</p>
-              <div className="hero-meta">
-                {([["48", "Teams"], ["104", "Matches"], ["16", "Host Cities"], ["3", "Nations"]] as [string, string][]).map(([n, l]) => (
-                  <div className="stat" key={l}>
-                    <div className="n display">{n}</div>
-                    <div className="t">{l}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <PulseCard tour={tour} nowTs={nowTs} phase={phase} playedCount={playedCount} />
-          </div>
-        </section>
-      ) : null}
+      {tab === "schedule" && <HeroSection tour={tour} nowTs={nowTs} phase={phase} playedCount={playedCount} />}
 
       {/* ---------- Main ---------- */}
       <main>
         <div className="wrap">
-          {tab === "schedule" ? <ScheduleView tour={tour} now={nowTs} />
-            : tab === "standings" ? <StandingsView tour={tour} now={nowTs} />
-              : <BracketView tour={tour} now={nowTs} />}
+          {tab === "schedule" && <ScheduleView tour={tour} now={nowTs} />}
+          {tab === "standings" && <StandingsView tour={tour} now={nowTs} />}
+          {tab === "bracket" && <BracketView tour={tour} now={nowTs} />}
         </div>
       </main>
 
