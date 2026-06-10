@@ -71,7 +71,7 @@ export function matchView(tour: Tournament, m: Match, now: number): MatchView {
     const live = played && (now < m.t + LIVE_MS);
     return {
       hCode: m.home, aCode: m.away,
-      hLabel: tour.teams[m.home].n, aLabel: tour.teams[m.away].n,
+      hLabel: tour.teams[m.home]?.n ?? m.home, aLabel: tour.teams[m.away]?.n ?? m.away,
       played, live, hs: m.hs, as: m.as, decided: ""
     };
   }

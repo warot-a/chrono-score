@@ -64,19 +64,16 @@ function PulseCard({ tour, nowTs, phase, playedCount }: {
 export function WorldCupApp() {
   const { tour, isLive } = useTournament();
 
-  const [tab, setTab] = React.useState(() => {
-    if (typeof localStorage !== 'undefined') return localStorage.getItem("wc_tab") || "schedule";
-    return "schedule";
-  });
+  const [tab, setTab] = React.useState("schedule");
+  const [nowDay, setNowDay] = React.useState(0);
 
-  // nowDay drives the clock slider (0–39). Defaults to live real time.
-  const [nowDay, setNowDay] = React.useState(() => {
-    if (typeof localStorage !== 'undefined') {
-      const v = parseFloat(localStorage.getItem("wc_now") || "");
-      if (!isNaN(v)) return v;
-    }
-    return Math.min(39, Math.max(0, (Date.now() - tour.DAY0) / tour.DAYMS));
-  });
+  React.useEffect(() => {
+    const savedTab = localStorage.getItem("wc_tab") || "schedule";
+    const savedNow = parseFloat(localStorage.getItem("wc_now") || "");
+    setTab(savedTab);
+    setNowDay(!isNaN(savedNow) ? savedNow : Math.min(39, Math.max(0, (Date.now() - tour.DAY0) / tour.DAYMS)));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [playing, setPlaying] = React.useState(false);
 
   // When live data loads, snap the clock to real time
