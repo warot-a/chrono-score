@@ -1,15 +1,17 @@
 'use client';
 
 import React from 'react';
-import { build, Tournament } from '@/lib/engine';
+import { Tournament } from '@/lib/engine';
 import { phaseForDay, matchView, Flag } from '@/lib/util';
+import { useTournament } from '@/hooks/useTournament';
 import { ScheduleView } from './ScheduleView';
 import { StandingsView } from './StandingsView';
 import { BracketView } from './BracketView';
 
-function fmtNow(ts: number): string {
-  const d = new Date(ts);
-  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
+function fmtNow(t: number): string {
+  return new Date(t).toLocaleDateString("en-US", {
+    weekday: "short", month: "short", day: "numeric",
+  });
 }
 
 function PulseCard({ tour, nowTs, phase, playedCount }: {
@@ -59,21 +61,40 @@ function PulseCard({ tour, nowTs, phase, playedCount }: {
   );
 }
 
-export function WorldCupApp({ seed = 3 }: { seed?: number }) {
+export function WorldCupApp() {
+  const { tour, isLive } = useTournament();
+
   const [tab, setTab] = React.useState(() => {
     if (typeof localStorage !== 'undefined') return localStorage.getItem("wc_tab") || "schedule";
     return "schedule";
   });
+
+  // nowDay drives the clock slider (0–39). Defaults to live real time.
   const [nowDay, setNowDay] = React.useState(() => {
     if (typeof localStorage !== 'undefined') {
       const v = parseFloat(localStorage.getItem("wc_now") || "");
-      return isNaN(v) ? 31 : v;
+      if (!isNaN(v)) return v;
     }
-    return 31;
+    return Math.min(39, Math.max(0, (Date.now() - tour.DAY0) / tour.DAYMS));
   });
   const [playing, setPlaying] = React.useState(false);
 
-  const tour = React.useMemo<Tournament>(() => build(seed), [seed]);
+  // When live data loads, snap the clock to real time
+  React.useEffect(() => {
+    if (isLive) {
+      setNowDay(Math.min(39, Math.max(0, (Date.now() - tour.DAY0) / tour.DAYMS)));
+    }
+  }, [isLive, tour.DAY0, tour.DAYMS]);
+
+  // Advance real-time clock every 30 s when in live mode (no slider interaction)
+  React.useEffect(() => {
+    if (!isLive) return;
+    const id = setInterval(() => {
+      setNowDay(Math.min(39, (Date.now() - tour.DAY0) / tour.DAYMS));
+    }, 30_000);
+    return () => clearInterval(id);
+  }, [isLive, tour.DAY0, tour.DAYMS]);
+
   const nowTs = tour.DAY0 + nowDay * tour.DAYMS;
 
   React.useEffect(() => { localStorage.setItem("wc_tab", tab); }, [tab]);
@@ -131,7 +152,10 @@ export function WorldCupApp({ seed = 3 }: { seed?: number }) {
               style={liveCount ? undefined : { background: "var(--gold)", animation: "none" }}
             />
             <div>
-              <div className="lbl">{liveCount ? liveCount + " match" + (liveCount > 1 ? "es" : "") + " live" : phase[0]}</div>
+              <div className="lbl">
+                {liveCount ? liveCount + " match" + (liveCount > 1 ? "es" : "") + " live" : phase[0]}
+                {isLive && <span style={{ marginLeft: 6, fontSize: "0.7em", color: "var(--gold)", letterSpacing: 1 }}>LIVE DATA</span>}
+              </div>
               <div className="date">{fmtNow(nowTs)}</div>
             </div>
           </div>
@@ -166,7 +190,7 @@ export function WorldCupApp({ seed = 3 }: { seed?: number }) {
               <h1 className="display">The world <br />is <span className="o">coming</span></h1>
               <p className="sub">48 nations. 16 cities. One trophy. Follow every fixture, live group standings, and the road to the final across the United States, Canada and Mexico.</p>
               <div className="hero-meta">
-                {(["48", "Teams"], [["48", "Teams"], ["104", "Matches"], ["16", "Host Cities"], ["3", "Nations"]] as [string, string][]).map(([n, l]) => (
+                {([["48", "Teams"], ["104", "Matches"], ["16", "Host Cities"], ["3", "Nations"]] as [string, string][]).map(([n, l]) => (
                   <div className="stat" key={l}>
                     <div className="n display">{n}</div>
                     <div className="t">{l}</div>
