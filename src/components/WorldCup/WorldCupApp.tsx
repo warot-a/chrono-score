@@ -65,21 +65,21 @@ function PulseCard({ tour, nowTs, phase, playedCount }: {
 export function WorldCupApp() {
   const { tour, isLive } = useTournament();
 
-  const [tab, setTab] = React.useState("schedule");
-  const [nowDay, setNowDay] = React.useState(0);
-
-  React.useEffect(() => {
-    const savedTab = localStorage.getItem("wc_tab") || "schedule";
-    const savedNow = parseFloat(localStorage.getItem("wc_now") || "");
-    setTab(savedTab);
-    setNowDay(!isNaN(savedNow) ? savedNow : Math.min(39, Math.max(0, (Date.now() - tour.DAY0) / tour.DAYMS)));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const [tab, setTab] = React.useState(() => {
+    if (typeof window === 'undefined') { return 'schedule'; }
+    return localStorage.getItem('wc_tab') || 'schedule';
+  });
+  const [nowDay, setNowDay] = React.useState(() => {
+    if (typeof window === 'undefined') { return 0; }
+    const saved = parseFloat(localStorage.getItem('wc_now') || '');
+    return !isNaN(saved) ? saved : Math.min(39, Math.max(0, (Date.now() - tour.DAY0) / tour.DAYMS));
+  });
   const [playing, setPlaying] = React.useState(false);
 
-  // When live data loads, snap the clock to real time
+  // When live data loads, snap the clock to real time (setState in effect is intentional here)
   React.useEffect(() => {
     if (isLive) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNowDay(Math.min(39, Math.max(0, (Date.now() - tour.DAY0) / tour.DAYMS)));
     }
   }, [isLive, tour.DAY0, tour.DAYMS]);
