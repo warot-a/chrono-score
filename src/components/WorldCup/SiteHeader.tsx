@@ -25,6 +25,7 @@ export function SiteHeader({ tab, setTab }: { tab: string; setTab: (tab: string)
               {lbl}
             </button>
           ))}
+          <a href="/about" target="_blank" rel="noopener noreferrer">About</a>
         </nav>
       </div>
     </header>

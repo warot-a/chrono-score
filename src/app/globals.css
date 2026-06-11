@@ -162,7 +162,8 @@ nav.tabs {
   border-radius: 13px;
   border: 1px solid var(--line);
 }
-nav.tabs button {
+nav.tabs button,
+nav.tabs a {
   border: 0;
   background: transparent;
   color: var(--muted);
@@ -172,8 +173,11 @@ nav.tabs button {
   padding: 9px 17px;
   border-radius: 9px;
   transition: 0.18s;
+  text-decoration: none;
+  cursor: pointer;
 }
-nav.tabs button:hover {
+nav.tabs button:hover,
+nav.tabs a:hover {
   color: var(--ink);
 }
 nav.tabs button.on {
