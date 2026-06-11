@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { Tournament, Match, StandingRow } from '@/lib/engine';
 
 const LIVE_MS = 2 * 3600 * 1000;
@@ -202,7 +203,7 @@ export function Flag({ code, tour, size }: { code: string; tour: Tournament; siz
   const px = size ? parseInt(size, 10) : 20;
   if (iso) {
     return (
-      <img
+      <Image
         src={`https://flagcdn.com/w40/${iso}.png`}
         alt={team.n}
         width={px * 1.5}

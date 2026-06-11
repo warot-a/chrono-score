@@ -27,7 +27,7 @@ export function useTournament(): TournamentState {
   const [state, setState] = useState<TournamentState>(() => ({
     tour: build(FALLBACK_SEED),
     isLive: false,
-    loading: true,
+    loading: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
   }));
 
   // Store raw DB payloads so we can re-build Tournament on Realtime updates
@@ -48,10 +48,7 @@ export function useTournament(): TournamentState {
 
   useEffect(() => {
     // Skip if Supabase isn't configured (local dev without .env.local)
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-      setState((s) => ({ ...s, loading: false }));
-      return;
-    }
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return;
 
     let cancelled = false;
 
