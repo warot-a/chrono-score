@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Tournament } from "@/lib/engine";
+import { useState, useEffect } from 'react';
+import { Tournament } from '@/lib/engine';
 
 interface ClockState {
   nowDay: number;
@@ -18,8 +18,8 @@ export function useClockState(tour: Tournament, isLive: boolean): ClockState {
 
   const setNowDay = (day: number | ((prev: number) => number)) => {
     _setNowDay((prev) => {
-      const next = typeof day === "function" ? day(prev) : day;
-      localStorage.setItem("wc_now", String(next));
+      const next = typeof day === 'function' ? day(prev) : day;
+      localStorage.setItem('wc_now', String(next));
       return next;
     });
   };
@@ -27,12 +27,8 @@ export function useClockState(tour: Tournament, isLive: boolean): ClockState {
   // Restore persisted value or default to current time after hydration
   useEffect(() => {
     const init = () => {
-      const saved = parseFloat(localStorage.getItem("wc_now") || "");
-      setNowDay(
-        !isNaN(saved)
-          ? saved
-          : Math.min(39, Math.max(0, (Date.now() - tour.DAY0) / tour.DAYMS)),
-      );
+      const saved = parseFloat(localStorage.getItem('wc_now') || '');
+      setNowDay(!isNaN(saved) ? saved : Math.min(39, Math.max(0, (Date.now() - tour.DAY0) / tour.DAYMS)));
     };
     const id = setTimeout(init, 0);
     return () => clearTimeout(id);
@@ -44,8 +40,7 @@ export function useClockState(tour: Tournament, isLive: boolean): ClockState {
     if (!isLive) {
       return;
     }
-    const tick = () =>
-      setNowDay(Math.min(39, (Date.now() - tour.DAY0) / tour.DAYMS));
+    const tick = () => setNowDay(Math.min(39, (Date.now() - tour.DAY0) / tour.DAYMS));
     tick();
     const id = setInterval(tick, 30_000);
     return () => clearInterval(id);

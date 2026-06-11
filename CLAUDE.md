@@ -36,7 +36,8 @@ No test suite is set up yet.
 
 `src/lib/engine.ts` — the entire tournament engine. Call `build(seed)` with an integer seed to deterministically simulate all 104 matches (group stage + knockout). Returns a `Tournament` object containing teams, groups, match results, standings, knockout bracket, and utility functions (`ts`, `dstr`, `tstr`). The engine uses a seeded PRNG + Poisson goal model.
 
-`src/lib/util.tsx` — pure helpers that derive *time-relative* views from a `Tournament`. Key exports:
+`src/lib/util.tsx` — pure helpers that derive _time-relative_ views from a `Tournament`. Key exports:
+
 - `matchView(tour, match, nowTs)` — returns live/played/upcoming state and resolved team codes for a match, given the current simulated timestamp
 - `liveStandings(tour, g, now)` — standings for group `g` considering only matches played so far
 - `phaseForDay(nowDay)` — returns `[shortLabel, longLabel]` for the current tournament phase

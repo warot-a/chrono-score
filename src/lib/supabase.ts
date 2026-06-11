@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-const url  = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 // Browser / RSC client (anon key, RLS applies)
@@ -24,7 +24,7 @@ export interface DBMatch {
   home_team_id: number | null;
   away_team_id: number | null;
   venue_id: number | null;
-  scheduled_at: string;       // ISO string (UTC)
+  scheduled_at: string; // ISO string (UTC)
   status: string;
   home_score: number | null;
   away_score: number | null;

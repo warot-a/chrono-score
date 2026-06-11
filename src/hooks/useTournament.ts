@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useState, useRef, useCallback, useEffect } from "react";
-import { Tournament } from "@/lib/engine";
-import { build } from "@/lib/engine";
-import { buildFromDB } from "@/lib/realData";
-import { supabase, DBMatch } from "@/lib/supabase";
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { Tournament } from '@/lib/engine';
+import { build } from '@/lib/engine';
+import { buildFromDB } from '@/lib/realData';
+import { supabase, DBMatch } from '@/lib/supabase';
 
-const SLUG = "worldcup-2026";
+const SLUG = 'worldcup-2026';
 const FALLBACK_SEED = 3;
 
 interface TournamentState {
@@ -42,12 +42,7 @@ export function useTournament(): TournamentState {
     if (!rawRef.current) return;
     const { teams, tournamentTeams, matches, venues } = rawRef.current;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tour = buildFromDB(
-      teams as any,
-      tournamentTeams as any,
-      matches as any,
-      venues as any,
-    );
+    const tour = buildFromDB(teams as any, tournamentTeams as any, matches as any, venues as any);
     setState({ tour, isLive: true, loading: false });
   }, []);
 
@@ -63,7 +58,7 @@ export function useTournament(): TournamentState {
     async function load() {
       try {
         const res = await fetch(`/api/matches?slug=${SLUG}`);
-        if (!res.ok) throw new Error("API error");
+        if (!res.ok) throw new Error('API error');
         const data = await res.json();
         if (cancelled) return;
         rawRef.current = data;
@@ -78,22 +73,16 @@ export function useTournament(): TournamentState {
 
     // Subscribe to Realtime match updates
     const channel = supabase
-      .channel("matches-live")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "matches" },
-        (payload) => {
-          if (!rawRef.current) return;
-          const updated = payload.new as DBMatch;
-          rawRef.current = {
-            ...rawRef.current,
-            matches: rawRef.current.matches.map((m) =>
-              m.id === updated.id ? updated : m,
-            ),
-          };
-          rebuildFromRaw();
-        },
-      )
+      .channel('matches-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, (payload) => {
+        if (!rawRef.current) return;
+        const updated = payload.new as DBMatch;
+        rawRef.current = {
+          ...rawRef.current,
+          matches: rawRef.current.matches.map((m) => (m.id === updated.id ? updated : m)),
+        };
+        rebuildFromRaw();
+      })
       .subscribe();
 
     return () => {
