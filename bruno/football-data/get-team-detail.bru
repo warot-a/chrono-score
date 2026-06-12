@@ -1,0 +1,19 @@
+meta {
+  name: Get Team Detail (with Squad)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/teams/{{team_id}}
+  body: none
+  auth: none
+}
+
+headers {
+  X-Auth-Token: {{api_key}}
+}
+
+vars:pre-request {
+  team_id: 759
+}

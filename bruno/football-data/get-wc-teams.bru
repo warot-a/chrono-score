@@ -1,0 +1,15 @@
+meta {
+  name: Get WC Teams
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/competitions/WC/teams
+  body: none
+  auth: none
+}
+
+headers {
+  X-Auth-Token: {{api_key}}
+}
