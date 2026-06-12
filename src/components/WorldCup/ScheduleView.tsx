@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Tournament, Match } from '@/lib/engine';
 import { Flag, matchView, groupColor } from '@/lib/util';
 import { useTournamentStore, selectNowTs } from '@/store/tournamentStore';
@@ -68,7 +69,7 @@ export function MatchRow({ tour, m, now, showDate }: { tour: Tournament; m: Matc
   const aWin = v.played && v.winnerCode === v.aCode;
 
   return (
-    <div className={'mrow ' + (v.live ? 'is-live' : v.played ? 'is-ft' : 'is-up')}>
+    <Link href={`/match/${m.id}`} className={'mrow ' + (v.live ? 'is-live' : v.played ? 'is-ft' : 'is-up')}>
       <div className="mtime">
         <span className="t">{time}</span>
         {showDate ? <span className="d">{dateShort}</span> : null}
@@ -93,7 +94,7 @@ export function MatchRow({ tour, m, now, showDate }: { tour: Tournament; m: Matc
           {decided}
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
