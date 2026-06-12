@@ -63,6 +63,64 @@ interface FDMatch {
   venue?: string;
 }
 
+interface FDLineupPlayer {
+  player: { id: number; name: string };
+  position: string;
+  shirtNumber: number;
+}
+
+interface FDTeamLineup {
+  id: number;
+  name: string;
+  formation: string | null;
+  startXI: FDLineupPlayer[];
+  substitutes: FDLineupPlayer[];
+  coach: { name: string } | null;
+}
+
+interface FDMatchDetail {
+  id: number;
+  status: string;
+  lineups: { homeTeam: FDTeamLineup; awayTeam: FDTeamLineup } | null;
+  goals: Array<{
+    minute: number;
+    injuryTime: number | null;
+    type: string;
+    team: { id: number; tla: string };
+    scorer: { name: string } | null;
+    assist: { name: string } | null;
+    score: FDScore;
+  }> | null;
+  bookings: Array<{
+    minute: number;
+    team: { id: number; tla: string };
+    player: { name: string };
+    card: string; // 'YELLOW_CARD' | 'RED_CARD' | 'YELLOW_RED_CARD'
+  }> | null;
+  substitutions: Array<{
+    minute: number;
+    team: { id: number; tla: string };
+    playerOut: { name: string };
+    playerIn: { name: string };
+  }> | null;
+}
+
+const FD_POS: Record<string, string> = {
+  Goalkeeper: 'GK',
+  'Centre-Back': 'CB',
+  'Left-Back': 'LB',
+  'Right-Back': 'RB',
+  'Defensive Midfield': 'DM',
+  'Central Midfield': 'CM',
+  'Attacking Midfield': 'AM',
+  'Left Winger': 'LW',
+  'Right Winger': 'RW',
+  'Left Midfield': 'LW',
+  'Right Midfield': 'RW',
+  'Centre-Forward': 'CF',
+  'Second Striker': 'ST',
+};
+
 async function fdFetch(path: string) {
   const res = await fetch(FD_BASE + path, {
     headers: { 'X-Auth-Token': process.env.FOOTBALL_DATA_API_KEY! },
@@ -178,12 +236,138 @@ async function handler(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ upserted });
+  // ── Fetch individual match details (lineups + events) ──────────────────────
+  // Find FINISHED matches that haven't had their details stored yet.
+  // Process up to 8 per cron run to stay within the 10 req/min rate limit.
+  const { data: needsDetails } = await db
+    .from('matches')
+    .select('id, external_id')
+    .eq('tournament_id', tour.id)
+    .eq('status', 'FINISHED')
+    .is('lineups', null)
+    .not('external_id', 'is', null)
+    .limit(8);
+
+  let detailsFetched = 0;
+  for (const row of needsDetails ?? []) {
+    try {
+      const detail: FDMatchDetail = await fdFetch(`/matches/${row.external_id}`);
+
+      const lineups = detail.lineups
+        ? buildLineupsPayload(detail.lineups)
+        : null;
+
+      const matchEvents = buildEventsPayload(detail);
+
+      await db
+        .from('matches')
+        .update({ lineups, match_events: matchEvents })
+        .eq('id', row.id);
+
+      detailsFetched++;
+    } catch {
+      // Non-fatal — missing details don't break the sync
+    }
+  }
+
+  return NextResponse.json({ upserted, detailsFetched });
 }
 
 // Vercel Cron uses GET; manual testing can use POST
 export const GET = handler;
 export const POST = handler;
+
+// ── Detail payload builders ───────────────────────────────────────────────────
+
+function buildLineupsPayload(lineups: { homeTeam: FDTeamLineup; awayTeam: FDTeamLineup }) {
+  function mapPlayers(list: FDLineupPlayer[], starting: boolean) {
+    return list.map((p) => ({
+      no: p.shirtNumber,
+      name: p.player.name,
+      pos: FD_POS[p.position] ?? p.position,
+      starting,
+    }));
+  }
+
+  return {
+    home: {
+      formation: lineups.homeTeam.formation,
+      coach: lineups.homeTeam.coach?.name ?? null,
+      players: [
+        ...mapPlayers(lineups.homeTeam.startXI ?? [], true),
+        ...mapPlayers(lineups.homeTeam.substitutes ?? [], false),
+      ],
+    },
+    away: {
+      formation: lineups.awayTeam.formation,
+      coach: lineups.awayTeam.coach?.name ?? null,
+      players: [
+        ...mapPlayers(lineups.awayTeam.startXI ?? [], true),
+        ...mapPlayers(lineups.awayTeam.substitutes ?? [], false),
+      ],
+    },
+  };
+}
+
+interface StoredEvent {
+  type: 'goal' | 'yellow' | 'red' | 'sub';
+  team: 'home' | 'away';
+  min: string;
+  sort: number;
+  player: string;
+  assist?: string;
+  on?: string;
+  off?: string;
+}
+
+function buildEventsPayload(detail: FDMatchDetail): StoredEvent[] {
+  const events: StoredEvent[] = [];
+
+  const homeId = detail.lineups?.homeTeam.id;
+
+  function teamSide(fdTeamId: number): 'home' | 'away' {
+    return fdTeamId === homeId ? 'home' : 'away';
+  }
+
+  for (const g of detail.goals ?? []) {
+    if (!g.scorer) continue;
+    const min = g.injuryTime ? `${g.minute}+${g.injuryTime}` : String(g.minute);
+    const ev: StoredEvent = {
+      type: 'goal',
+      team: teamSide(g.team.id),
+      min,
+      sort: g.minute + (g.injuryTime ?? 0) * 0.1,
+      player: g.scorer.name,
+    };
+    if (g.assist) ev.assist = g.assist.name;
+    events.push(ev);
+  }
+
+  for (const b of detail.bookings ?? []) {
+    const card = b.card === 'YELLOW_CARD' ? 'yellow' : 'red';
+    events.push({
+      type: card as 'yellow' | 'red',
+      team: teamSide(b.team.id),
+      min: String(b.minute),
+      sort: b.minute,
+      player: b.player.name,
+    });
+  }
+
+  for (const s of detail.substitutions ?? []) {
+    events.push({
+      type: 'sub',
+      team: teamSide(s.team.id),
+      min: String(s.minute),
+      sort: s.minute,
+      player: s.playerIn.name,
+      on: s.playerIn.name,
+      off: s.playerOut.name,
+    });
+  }
+
+  return events.sort((a, b) => a.sort - b.sort);
+}
 
 // Some TLA differences between football-data.org and FIFA
 const TLA_FIXES: Record<string, string> = {

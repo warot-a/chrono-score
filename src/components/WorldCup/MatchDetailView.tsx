@@ -1,14 +1,32 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useTournamentStore } from '@/store/tournamentStore';
 import { useTournamentSync } from '@/hooks/useTournamentSync';
 import { Flag } from '@/lib/util';
 import { getSquad, Player, Squad } from '@/lib/players';
 import { buildMatchEvents, MatchEvent, Referee } from '@/lib/matchEvents';
+import { supabase } from '@/lib/supabase';
 import { SiteHeader } from './SiteHeader';
 import { SiteFooter } from './SiteFooter';
+
+// Shapes stored in DB by sync route
+interface DBLineupPlayer { no: number; name: string; pos: string; starting: boolean; }
+interface DBLineupsPayload {
+  home: { formation: string | null; coach: string | null; players: DBLineupPlayer[] };
+  away: { formation: string | null; coach: string | null; players: DBLineupPlayer[] };
+}
+interface DBStoredEvent {
+  type: 'goal' | 'yellow' | 'red' | 'sub';
+  team: 'home' | 'away';
+  min: string;
+  sort: number;
+  player: string;
+  assist?: string;
+  on?: string;
+  off?: string;
+}
 
 const POS_FULL: Record<string, string> = {
   GK:'GK', RB:'RB', LB:'LB', CB:'CB', DM:'DM', CM:'CM',
@@ -244,29 +262,100 @@ function Officials({ referees }: { referees: Referee[] }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
+function parseDbId(matchId: string): { type: 'id'; value: number } | { type: 'ko'; value: number } | null {
+  if (matchId.startsWith('M')) {
+    const n = parseInt(matchId.slice(1));
+    return isNaN(n) ? null : { type: 'id', value: n };
+  }
+  if (matchId.startsWith('K')) {
+    const n = parseInt(matchId.slice(1));
+    return isNaN(n) ? null : { type: 'ko', value: n };
+  }
+  return null;
+}
+
+function dbLineupsToSquads(
+  payload: DBLineupsPayload,
+  homeCode: string,
+  awayCode: string,
+): { homeSquad: Squad; awaySquad: Squad } {
+  const toSquad = (side: DBLineupsPayload['home'], code: string): Squad => ({
+    code,
+    coach: side.coach ?? 'Unknown',
+    players: side.players.map((p) => ({ no: p.no, name: p.name, pos: p.pos, starting: p.starting })),
+  });
+  return { homeSquad: toSquad(payload.home, homeCode), awaySquad: toSquad(payload.away, awayCode) };
+}
+
+function dbEventsToMatchEvents(stored: DBStoredEvent[]): MatchEvent[] {
+  return stored.map((e) => ({
+    type: e.type,
+    team: e.team,
+    min: e.min,
+    sort: e.sort,
+    no: 0,
+    player: e.player,
+    ...(e.assist ? { assist: e.assist } : {}),
+    ...(e.type === 'sub' ? { on: e.on, off: e.off, onNo: 0, offNo: 0 } : {}),
+  }));
+}
+
 export function MatchDetailView({ matchId }: { matchId: string }) {
   useTournamentSync();
 
   const tour = useTournamentStore((s) => s.tour);
+
+  const [realLineups, setRealLineups] = useState<DBLineupsPayload | null>(null);
+  const [realEvents, setRealEvents] = useState<DBStoredEvent[] | null>(null);
 
   const match = useMemo(
     () => tour.matches.find((m) => m.id === matchId) ?? null,
     [tour, matchId],
   );
 
-  const homeSquad = useMemo(
+  // Fetch real data from DB if available
+  useEffect(() => {
+    const ref = parseDbId(matchId);
+    if (!ref) return;
+
+    async function fetchDetails() {
+      let query = supabase.from('matches').select('lineups, match_events');
+      if (ref!.type === 'id') {
+        query = query.eq('id', ref!.value);
+      } else {
+        query = query.eq('ko_number', ref!.value);
+      }
+      const { data } = await query.maybeSingle();
+      if (data?.lineups) setRealLineups(data.lineups as DBLineupsPayload);
+      if (data?.match_events) setRealEvents(data.match_events as DBStoredEvent[]);
+    }
+
+    fetchDetails();
+  }, [matchId]);
+
+  const generatedHomeSquad = useMemo(
     () => (match ? getSquad(match.home, tour.seed) : null),
     [match, tour.seed],
   );
-  const awaySquad = useMemo(
+  const generatedAwaySquad = useMemo(
     () => (match ? getSquad(match.away, tour.seed) : null),
     [match, tour.seed],
   );
 
+  const { homeSquad, awaySquad } = useMemo(() => {
+    if (realLineups && match) {
+      return dbLineupsToSquads(realLineups, match.home, match.away);
+    }
+    return { homeSquad: generatedHomeSquad, awaySquad: generatedAwaySquad };
+  }, [realLineups, match, generatedHomeSquad, generatedAwaySquad]);
+
   const { events, referees } = useMemo(() => {
-    if (!match || !homeSquad || !awaySquad) return { events: [], referees: [] };
+    if (realEvents) {
+      return { events: dbEventsToMatchEvents(realEvents), referees: [] as Referee[] };
+    }
+    if (!match || !homeSquad || !awaySquad) return { events: [] as MatchEvent[], referees: [] as Referee[] };
     return buildMatchEvents(match, homeSquad, awaySquad, tour.seed);
-  }, [match, homeSquad, awaySquad, tour.seed]);
+  }, [realEvents, match, homeSquad, awaySquad, tour.seed]);
 
   if (!match) {
     return (
