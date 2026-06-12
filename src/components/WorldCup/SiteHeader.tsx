@@ -1,12 +1,16 @@
 'use client';
 
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
 const TABS: [string, string][] = [
-  ['schedule', 'Schedule'],
-  ['standings', 'Standings'],
-  ['bracket', 'Bracket'],
+  ['/schedule', 'Schedule'],
+  ['/standings', 'Standings'],
+  ['/bracket', 'Bracket'],
 ];
 
-export function SiteHeader({ tab, setTab }: { tab: string; setTab: (tab: string) => void }) {
+export function SiteHeader() {
+  const pathname = usePathname();
   return (
     <header className="site">
       <div className="wrap hrow">
@@ -20,10 +24,10 @@ export function SiteHeader({ tab, setTab }: { tab: string; setTab: (tab: string)
           </div>
         </div>
         <nav className="tabs">
-          {TABS.map(([k, lbl]) => (
-            <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>
+          {TABS.map(([href, lbl]) => (
+            <Link key={href} href={href} className={pathname === href ? 'on' : ''}>
               {lbl}
-            </button>
+            </Link>
           ))}
           <a href="/about" target="_blank" rel="noopener noreferrer">
             About

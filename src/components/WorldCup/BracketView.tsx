@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useLayoutEffect, MutableRefObject } from 'react';
 import { Tournament } from '@/lib/engine';
 import { Flag, matchView, koFT } from '@/lib/util';
+import { useTournamentStore, selectNowTs } from '@/store/tournamentStore';
 
 const L_R32 = [74, 77, 73, 75, 83, 84, 81, 82];
 const L_R16 = [89, 90, 93, 94];
@@ -105,7 +106,9 @@ function Column({
   );
 }
 
-export function BracketView({ tour, now }: { tour: Tournament; now: number }) {
+export function BracketView() {
+  const tour = useTournamentStore((s) => s.tour);
+  const now = useTournamentStore(selectNowTs);
   const cardRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const innerRef = useRef<HTMLDivElement>(null);
   const [lines, setLines] = useState<{ paths: { d: string; on: boolean }[]; w: number; h: number }>({

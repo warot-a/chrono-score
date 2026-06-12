@@ -180,7 +180,8 @@ nav.tabs button:hover,
 nav.tabs a:hover {
   color: var(--ink);
 }
-nav.tabs button.on {
+nav.tabs button.on,
+nav.tabs a.on {
   background: linear-gradient(180deg, var(--violet-2), var(--violet));
   color: #fff;
   box-shadow: 0 4px 14px rgba(124, 58, 237, 0.45);
