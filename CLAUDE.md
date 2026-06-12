@@ -32,6 +32,10 @@ No test suite is set up yet.
 
 `src/lib/supabase.ts` — exports `supabase` (anon client, browser/RSC) and `supabaseAdmin()` (service-role client, server-only for `/api/sync`). Also exports row types: `DBMatch`, `DBTeam`, `DBVenue`, `DBTournamentTeam`.
 
+`src/lib/config.ts` — exports `AUTHOR` (name, GitHub, LinkedIn links). Single source of truth for author metadata used by the about page and footer.
+
+`src/lib/realData.ts` — transforms Supabase DB rows (`DBMatch`, `DBTeam`, etc.) into the `Tournament` object shape that UI components and `util.tsx` expect. Bridges the real-data path without touching the engine.
+
 ### Core data flow
 
 `src/lib/engine.ts` — the entire tournament engine. Call `build(seed)` with an integer seed to deterministically simulate all 104 matches (group stage + knockout). Returns a `Tournament` object containing teams, groups, match results, standings, knockout bracket, and utility functions (`ts`, `dstr`, `tstr`). The engine uses a seeded PRNG + Poisson goal model.
@@ -44,6 +48,8 @@ No test suite is set up yet.
 
 `src/hooks/useTournament.ts` — fetches match data from `/api/matches?slug=worldcup-2026`, then subscribes to Supabase Realtime for live score updates. Falls back to `build(FALLBACK_SEED)` (seed `3`) when `NEXT_PUBLIC_SUPABASE_URL` is not set. Returns `{ tour, isLive, loading }`.
 
+`src/hooks/useClockState.ts` — manages `nowDay` (float 0–39) and `playing` state. Persists `nowDay` to `localStorage` under key `wc_now`. Extracts clock logic out of `WorldCupApp` for clarity.
+
 `src/app/page.tsx` — entry point, mounts `<WorldCupApp />` (no props). To change the fallback seed, edit `FALLBACK_SEED` in `useTournament.ts`.
 
 ### Component tree
@@ -51,13 +57,22 @@ No test suite is set up yet.
 Components live in `src/components/WorldCup/`.
 
 ```
-WorldCupApp          — clock bar, tab nav, "now" slider state
+WorldCupApp          — clock bar, tab nav, delegates clock state to useClockState
   ├── ScheduleView   — match list grouped by date/round
   ├── StandingsView  — 12 group cards + best-thirds table
   └── BracketView    — knockout bracket visualisation
 ```
 
-`WorldCupApp` holds the two key pieces of state: `tab` (active view) and `nowDay` (a float 0–39 representing days elapsed since Jun 11, 2026). Both are persisted to `localStorage`. A "play" button animates `nowDay` forward. When `isLive` is true, the clock auto-syncs to real time every 30 s. `nowTs` (a UTC millisecond timestamp) is derived from `nowDay` and passed down to all views.
+Supporting components (also in `src/components/WorldCup/`):
+- `SiteHeader` — top nav bar
+- `SiteFooter` — footer with author links from `config.ts`
+- `HeroSection` — landing hero
+- `PulseCard` — live-match pulse animation card
+- `GitHubIcon`, `LinkedInIcon` — SVG icon components
+
+`WorldCupApp` holds `tab` (active view), persisted to `localStorage`. Clock state (`nowDay`, `playing`) is managed by `useClockState`. A "play" button animates `nowDay` forward. When `isLive` is true, the clock auto-syncs to real time every 30 s. `nowTs` (a UTC millisecond timestamp) is derived from `nowDay` and passed down to all views.
+
+`src/app/about/page.tsx` — static about page using `AUTHOR` from `config.ts`.
 
 ### Styling
 

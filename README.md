@@ -1,5 +1,11 @@
 # chrono-score
 
+![GitHub release](https://img.shields.io/github/v/release/warot-a/chrono-score)
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss)
+![Supabase](https://img.shields.io/badge/Supabase-green?logo=supabase)
+
 A single-page Next.js app that simulates the FIFA World Cup 2026 tournament. The tournament engine runs deterministically from a seed value using a seeded PRNG + Poisson goal model, with real-time data sync backed by Supabase.
 
 ## Features
