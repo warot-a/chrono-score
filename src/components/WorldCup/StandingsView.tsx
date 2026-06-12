@@ -3,6 +3,7 @@
 import React from 'react';
 import { Tournament } from '@/lib/engine';
 import { Flag, liveStandings, liveThirds, groupColor, allGroupsComplete, groupComplete } from '@/lib/util';
+import { useTournamentStore, selectNowTs } from '@/store/tournamentStore';
 
 function GroupCard({
   tour,
@@ -115,7 +116,9 @@ function ThirdRace({ tour, now }: { tour: Tournament; now: number }) {
   );
 }
 
-export function StandingsView({ tour, now }: { tour: Tournament; now: number }) {
+export function StandingsView() {
+  const tour = useTournamentStore((s) => s.tour);
+  const now = useTournamentStore(selectNowTs);
   const thirds = liveThirds(tour, now);
   const qualThirdGroups = thirds.slice(0, 8).map((x) => x.g!);
   const anyPlayed = tour.matches.some((m) => m.stage === 'group' && m.t <= now);

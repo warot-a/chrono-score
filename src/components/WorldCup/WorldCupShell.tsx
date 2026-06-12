@@ -1,15 +1,11 @@
 'use client';
 
-import { useState, CSSProperties } from 'react';
+import { CSSProperties } from 'react';
 import { phaseForDay, matchView } from '@/lib/util';
-import { useTournament } from '@/hooks/useTournament';
-import { useClockState } from '@/hooks/useClockState';
-import { ScheduleView } from './ScheduleView';
-import { StandingsView } from './StandingsView';
-import { BracketView } from './BracketView';
-import { SiteFooter } from './SiteFooter';
-import { HeroSection } from './HeroSection';
+import { useTournamentStore, selectNowTs } from '@/store/tournamentStore';
+import { useTournamentSync } from '@/hooks/useTournamentSync';
 import { SiteHeader } from './SiteHeader';
+import { SiteFooter } from './SiteFooter';
 
 function fmtNow(t: number): string {
   return new Date(t).toLocaleDateString('en-US', {
@@ -19,44 +15,35 @@ function fmtNow(t: number): string {
   });
 }
 
-export function WorldCupApp() {
-  const { tour, isLive } = useTournament();
+const JUMPS: [string, number][] = [
+  ['Opening', 0.4],
+  ['Groups', 8],
+  ['R32', 17.4],
+  ['R16', 23.4],
+  ['Quarters', 28.4],
+  ['Semis', 33.4],
+  ['Final', 38.4],
+  ['Done', 39],
+];
 
-  const [tab, _setTab] = useState(() => {
-    if (typeof window === 'undefined') {
-      return 'schedule';
-    }
-    return localStorage.getItem('wc_tab') || 'schedule';
-  });
-  const setTab = (v: string) => {
-    _setTab(v);
-    localStorage.setItem('wc_tab', v);
-  };
+export function WorldCupShell({ children }: { children: React.ReactNode }) {
+  useTournamentSync();
 
-  const { nowDay, setNowDay, playing, setPlaying, nowTs } = useClockState(tour, isLive);
+  const tour = useTournamentStore((s) => s.tour);
+  const isLive = useTournamentStore((s) => s.isLive);
+  const nowDay = useTournamentStore((s) => s.nowDay);
+  const playing = useTournamentStore((s) => s.playing);
+  const setNowDay = useTournamentStore((s) => s.setNowDay);
+  const setPlaying = useTournamentStore((s) => s.setPlaying);
+  const nowTs = useTournamentStore(selectNowTs);
 
   const phase = phaseForDay(nowDay);
-  const liveCount = tour.matches.filter((m) => {
-    const v = matchView(tour, m, nowTs);
-    return v.live;
-  }).length;
-  const playedCount = tour.matches.filter((m) => matchView(tour, m, nowTs).played).length;
-
-  const JUMPS: [string, number][] = [
-    ['Opening', 0.4],
-    ['Groups', 8],
-    ['R32', 17.4],
-    ['R16', 23.4],
-    ['Quarters', 28.4],
-    ['Semis', 33.4],
-    ['Final', 38.4],
-    ['Done', 39],
-  ];
+  const liveCount = tour.matches.filter((m) => matchView(tour, m, nowTs).live).length;
   const sliderPct = Math.round((nowDay / 39) * 100);
+
   return (
     <>
-      {/* ---------- Header ---------- */}
-      <SiteHeader tab={tab} setTab={setTab} />
+      <SiteHeader />
 
       {/* ---------- Clock bar ---------- */}
       <div className="clock">
@@ -109,19 +96,8 @@ export function WorldCupApp() {
         </div>
       </div>
 
-      {/* ---------- Hero (schedule tab only) ---------- */}
-      {tab === 'schedule' && <HeroSection tour={tour} nowTs={nowTs} phase={phase} playedCount={playedCount} />}
+      {children}
 
-      {/* ---------- Main ---------- */}
-      <main>
-        <div className="wrap">
-          {tab === 'schedule' && <ScheduleView tour={tour} now={nowTs} />}
-          {tab === 'standings' && <StandingsView tour={tour} now={nowTs} />}
-          {tab === 'bracket' && <BracketView tour={tour} now={nowTs} />}
-        </div>
-      </main>
-
-      {/* ---------- Footer ---------- */}
       <SiteFooter />
     </>
   );

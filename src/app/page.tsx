@@ -1,5 +1,5 @@
-import { WorldCupApp } from '@/components/WorldCup/WorldCupApp';
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return <WorldCupApp />;
+  redirect('/schedule');
 }

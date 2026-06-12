@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Tournament, Match } from '@/lib/engine';
 import { Flag, matchView, groupColor } from '@/lib/util';
+import { useTournamentStore, selectNowTs } from '@/store/tournamentStore';
 
 const ROUND_ABBR: Record<string, string> = {
   'Round of 32': 'R32',
@@ -96,7 +97,9 @@ export function MatchRow({ tour, m, now, showDate }: { tour: Tournament; m: Matc
   );
 }
 
-export function ScheduleView({ tour, now }: { tour: Tournament; now: number }) {
+export function ScheduleView() {
+  const tour = useTournamentStore((s) => s.tour);
+  const now = useTournamentStore(selectNowTs);
   const [stage, setStage] = useState('all');
   const [grp, setGrp] = useState('all');
 
