@@ -74,7 +74,7 @@ export function useTournamentSync(): void {
     const channel = supabase
       .channel('matches-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, (payload) => {
-        if (!rawRef.current) {
+        if (!rawRef.current || !payload.new || !('id' in payload.new)) {
           return;
         }
         const updated = payload.new as DBMatch;
@@ -98,8 +98,11 @@ export function useTournamentSync(): void {
     if (!isLive) {
       return;
     }
-    const { tour, setNowDay } = useTournamentStore.getState();
-    const tick = () => setNowDay(Math.min(39, (Date.now() - tour.DAY0) / tour.DAYMS));
+    const { setNowDay } = useTournamentStore.getState();
+    const tick = () => {
+      const { tour } = useTournamentStore.getState();
+      setNowDay(Math.min(39, (Date.now() - tour.DAY0) / tour.DAYMS));
+    };
     tick();
     const id = setInterval(tick, 30_000);
     return () => clearInterval(id);
