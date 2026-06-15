@@ -460,7 +460,11 @@ main {
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
 }
 
-@media (max-width: 880px) {
+@media (width < 48rem) {
+  .wrap {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
   .hero-grid {
     grid-template-columns: 1fr;
   }
@@ -732,6 +736,7 @@ main {
 .mrow {
   display: grid;
   grid-template-columns: 74px 38px minmax(0, 1fr) 92px minmax(0, 1fr) 1.15fr;
+  grid-template-areas: 'time tag home score away venue';
   align-items: center;
   gap: 10px;
   background: var(--surface);
@@ -754,6 +759,8 @@ main {
     0 6px 20px rgba(52, 211, 153, 0.08);
 }
 .mtime {
+  grid-area: time;
+  align-self: center;
   display: flex;
   flex-direction: column;
   line-height: 1.2;
@@ -767,6 +774,7 @@ main {
   color: var(--faint);
 }
 .mtag {
+  grid-area: tag;
   display: flex;
   justify-content: center;
 }
@@ -786,8 +794,11 @@ main {
   min-width: 0;
 }
 .mteam.home {
+  grid-area: home;
   justify-content: flex-end;
-  text-align: right;
+}
+.mteam.away {
+  grid-area: away;
 }
 .mteam .nm {
   font-weight: 700;
@@ -803,6 +814,7 @@ main {
   opacity: 0.35;
 }
 .mscore {
+  grid-area: score;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -838,6 +850,7 @@ main {
   color: var(--green);
 }
 .mvenue {
+  grid-area: venue;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -1392,23 +1405,43 @@ tr.out {
 
 @media (max-width: 680px) {
   .mrow {
-    grid-template-columns: 54px minmax(0, 1fr) 78px minmax(0, 1fr);
-    row-gap: 8px;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-areas:
+      'time time time'
+      'home score away'
+      'venue venue venue';
+    align-items: start;
+    row-gap: 6px;
   }
   .mtag {
     display: none;
   }
+  .mtime {
+    align-self: center;
+  }
+  .mteam {
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+  }
+  .mteam.home {
+    justify-content: flex-start;
+    flex-direction: column-reverse;
+  }
+  .mteam .nm {
+    width: 100%;
+    text-align: center;
+  }
+  .mscore {
+    align-self: start;
+    margin-top: 2px;
+  }
   .mvenue {
-    grid-column: 1 / -1;
     text-align: left;
   }
   .vrow {
     justify-content: flex-start;
-  }
-  .mteam.home {
-    justify-content: flex-start;
-    text-align: left;
-    flex-direction: row-reverse;
   }
 }
 
