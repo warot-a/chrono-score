@@ -44,7 +44,7 @@ pnpm lint     # ESLint
 ### Component tree
 
 ```
-WorldCupApp          — clock bar, tab nav, "now" slider state
+WorldCupApp          — clock bar, tab nav, delegates clock state to useClockState
   ├── ScheduleView   — match list grouped by date/round
   ├── StandingsView  — 12 group cards + best-thirds table
   └── BracketView    — knockout bracket visualisation
