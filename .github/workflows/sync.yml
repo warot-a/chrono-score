@@ -2,7 +2,8 @@ name: Sync match data
 
 on:
   schedule:
-    - cron: '* * * * *' # every 1 minute
+    - cron: '* 16-23 * * *' # every minute, 23:00–00:59 GMT+7
+    - cron: '* 0-2 * * *'   # every minute, 07:00–09:59 GMT+7
   workflow_dispatch: # allow manual trigger from GitHub UI
 
 jobs:
