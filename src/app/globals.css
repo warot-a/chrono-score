@@ -460,11 +460,13 @@ main {
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
 }
 
-@media (max-width: 880px) {
-  .hero-grid {
-    grid-template-columns: 1fr;
+@media (width < 48rem) {
+  .wrap {
     padding-left: 8px;
     padding-right: 8px;
+  }
+  .hero-grid {
+    grid-template-columns: 1fr;
   }
   .hero-card {
     display: none;
@@ -484,10 +486,6 @@ main {
   .clock {
     top: 0;
     position: relative;
-  }
-  .clockrow {
-    padding-left: 8px;
-    padding-right: 8px;
   }
   header.site {
     position: relative;
