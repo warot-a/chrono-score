@@ -1429,6 +1429,7 @@ tr.out {
   }
   .mteam.home {
     justify-content: flex-start;
+    flex-direction: column-reverse;
   }
   .mteam .nm {
     width: 100%;

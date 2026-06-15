@@ -75,8 +75,8 @@ export function MatchRow({ tour, m, now, showDate }: { tour: Tournament; m: Matc
       </div>
       <div className="mtag">{tag}</div>
       <div className={'mteam home' + (hWin ? ' win' : '')}>
-        {v.hCode ? <Flag code={v.hCode} tour={tour} /> : <span className="flag ph">?</span>}
         <span className="nm">{v.hLabel}</span>
+        {v.hCode ? <Flag code={v.hCode} tour={tour} /> : <span className="flag ph">?</span>}
       </div>
       <Score v={v} />
       <div className={'mteam away' + (aWin ? ' win' : '')}>
