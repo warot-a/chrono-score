@@ -101,6 +101,13 @@ export function ScheduleView() {
   const tour = useTournamentStore((s) => s.tour);
   const now = useTournamentStore(selectNowTs);
   const [stage, setStage] = useState('all');
+
+  const nowDt = new Date(now);
+  const localDateKey = (d: Date) =>
+    `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  const todayMatches = tour.matches.filter(
+    (m) => localDateKey(new Date(m.t)) === localDateKey(nowDt),
+  );
   const [grp, setGrp] = useState('all');
 
   const stageTabs = [
@@ -171,6 +178,24 @@ export function ScheduleView() {
           ))}
         </div>
       ) : null}
+      {todayMatches.length > 0 && (
+        <div className="today-block">
+          <div className="dayhead">
+            <div className="dleft">
+              <span className="dw">Today</span>
+              <span className="dnum">
+                {new Date(now).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+              </span>
+            </div>
+            <span className="dphase today-badge">Today&apos;s Matches</span>
+          </div>
+          <div className="mlist">
+            {todayMatches.map((m) => (
+              <MatchRow key={m.id} tour={tour} m={m} now={now} />
+            ))}
+          </div>
+        </div>
+      )}
       {byDay.length === 0 ? (
         <div className="empty">No matches in this view.</div>
       ) : (

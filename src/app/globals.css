@@ -647,6 +647,41 @@ main {
 .dayblock {
   margin-bottom: 30px;
 }
+.today-block {
+  margin-bottom: 40px;
+  padding: 20px 20px 22px;
+  background: linear-gradient(135deg, rgba(243, 196, 77, 0.07) 0%, rgba(124, 58, 237, 0.08) 100%);
+  border: 1px solid rgba(243, 196, 77, 0.3);
+  border-radius: 12px;
+  position: relative;
+}
+.today-block::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  box-shadow: 0 0 32px rgba(243, 196, 77, 0.08);
+  pointer-events: none;
+}
+.today-block .dayhead {
+  border-bottom-color: rgba(243, 196, 77, 0.35);
+}
+.today-block .dayhead::after {
+  width: 100%;
+  background: linear-gradient(90deg, var(--gold), transparent);
+}
+.today-block .dw {
+  color: var(--gold);
+}
+.today-badge {
+  background: rgba(243, 196, 77, 0.15);
+  color: var(--gold);
+  border: 1px solid rgba(243, 196, 77, 0.4);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
 .dayhead {
   display: flex;
   align-items: baseline;
