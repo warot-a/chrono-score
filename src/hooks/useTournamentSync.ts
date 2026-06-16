@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef } from 'react';
+
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 import { buildFromDB } from '@/lib/realData';
 import { supabase, DBMatch } from '@/lib/supabase';
 import { useTournamentStore } from '@/store/tournamentStore';
@@ -30,14 +32,14 @@ export function useTournamentSync(initialData?: MatchData | null): void {
   }, []);
 
   // ---- Apply server data before first paint (no fake-data flash) ----
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!initialData) return;
     const { teams, tournamentTeams, matches, venues } = initialData;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const tour = buildFromDB(teams as any, tournamentTeams as any, matches as any, venues as any);
     useTournamentStore.getState().setTour(tour, true);
     rawRef.current = initialData;
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // ---- Realtime subscription for live score updates ----
   useEffect(() => {
