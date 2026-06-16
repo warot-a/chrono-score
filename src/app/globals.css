@@ -849,7 +849,7 @@ main {
 .mscore.live b {
   color: var(--green);
 }
-.mvenue {
+.mstatus {
   grid-area: venue;
   display: flex;
   flex-direction: column;
@@ -1437,7 +1437,7 @@ tr.out {
     align-self: start;
     margin-top: 2px;
   }
-  .mvenue {
+  .mstatus {
     text-align: left;
   }
   .vrow {

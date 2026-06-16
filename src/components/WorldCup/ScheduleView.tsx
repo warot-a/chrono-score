@@ -83,13 +83,9 @@ export function MatchRow({ tour, m, now, showDate }: { tour: Tournament; m: Matc
         {v.aCode ? <Flag code={v.aCode} tour={tour} /> : <span className="flag ph">?</span>}
         <span className="nm">{v.aLabel}</span>
       </div>
-      <div className="mvenue">
+      <div className="mstatus">
         <div className="vrow">
-          <span>{m.cc + ' ' + m.city}</span>
           {status}
-        </div>
-        <div className="vstad">
-          {m.venue}
           {decided}
         </div>
       </div>
