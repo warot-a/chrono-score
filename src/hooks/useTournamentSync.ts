@@ -1,27 +1,23 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { buildFromDB } from '@/lib/realData';
 import { supabase, DBMatch } from '@/lib/supabase';
 import { useTournamentStore } from '@/store/tournamentStore';
-
-const SLUG = 'worldcup-2026';
+import type { MatchData } from '@/app/(worldcup)/layout';
 
 /**
  * Single source of side effects for the tournament:
  *   1. Rehydrates the persisted clock position (store uses skipHydration).
- *   2. Fetches match data from /api/matches and subscribes to Supabase Realtime.
- *   3. Drives the clock — snap-to-realtime while live, and the play animation.
+ *   2. Applies server-fetched initialData synchronously before first paint
+ *      (via useLayoutEffect) to avoid the fake-data flash.
+ *   3. Subscribes to Supabase Realtime for live score updates.
+ *   4. Drives the clock — snap-to-realtime while live, and the play animation.
  *
  * Mount this exactly once, in the route group shell.
  */
-export function useTournamentSync(): void {
-  const rawRef = useRef<{
-    teams: unknown[];
-    tournamentTeams: unknown[];
-    matches: DBMatch[];
-    venues: unknown[];
-  } | null>(null);
+export function useTournamentSync(initialData?: MatchData | null): void {
+  const rawRef = useRef<MatchData | null>(null);
 
   // ---- Rehydrate persisted clock, defaulting to "now" when none saved ----
   useEffect(() => {
@@ -33,50 +29,32 @@ export function useTournamentSync(): void {
     }
   }, []);
 
-  // ---- Data: initial fetch + Realtime subscription ----
+  // ---- Apply server data before first paint (no fake-data flash) ----
+  useLayoutEffect(() => {
+    if (!initialData) return;
+    const { teams, tournamentTeams, matches, venues } = initialData;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tour = buildFromDB(teams as any, tournamentTeams as any, matches as any, venues as any);
+    useTournamentStore.getState().setTour(tour, true);
+    rawRef.current = initialData;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ---- Realtime subscription for live score updates ----
   useEffect(() => {
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-      return;
-    }
-    let cancelled = false;
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return;
 
     const rebuild = () => {
-      if (!rawRef.current) {
-        return;
-      }
+      if (!rawRef.current) return;
       const { teams, tournamentTeams, matches, venues } = rawRef.current;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const tour = buildFromDB(teams as any, tournamentTeams as any, matches as any, venues as any);
       useTournamentStore.getState().setTour(tour, true);
     };
 
-    async function load() {
-      try {
-        const res = await fetch(`/api/matches?slug=${SLUG}`);
-        if (!res.ok) {
-          throw new Error('API error');
-        }
-        const data = await res.json();
-        if (cancelled) {
-          return;
-        }
-        rawRef.current = data;
-        rebuild();
-      } catch {
-        if (!cancelled) {
-          useTournamentStore.getState().setLoading(false);
-        }
-      }
-    }
-
-    load();
-
     const channel = supabase
       .channel('matches-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, (payload) => {
-        if (!rawRef.current || !payload.new || !('id' in payload.new)) {
-          return;
-        }
+        if (!rawRef.current || !payload.new || !('id' in payload.new)) return;
         const updated = payload.new as DBMatch;
         rawRef.current = {
           ...rawRef.current,
@@ -87,7 +65,6 @@ export function useTournamentSync(): void {
       .subscribe();
 
     return () => {
-      cancelled = true;
       supabase.removeChannel(channel);
     };
   }, []);
@@ -95,9 +72,7 @@ export function useTournamentSync(): void {
   // ---- Clock: snap to real time on mount and advance every 30s while live ----
   const isLive = useTournamentStore((s) => s.isLive);
   useEffect(() => {
-    if (!isLive) {
-      return;
-    }
+    if (!isLive) return;
     const { setNowDay } = useTournamentStore.getState();
     const tick = () => {
       const { tour } = useTournamentStore.getState();
@@ -111,9 +86,7 @@ export function useTournamentSync(): void {
   // ---- Clock: play animation ----
   const playing = useTournamentStore((s) => s.playing);
   useEffect(() => {
-    if (!playing) {
-      return;
-    }
+    if (!playing) return;
     const { setNowDay, setPlaying } = useTournamentStore.getState();
     const id = setInterval(() => {
       setNowDay((d) => {
