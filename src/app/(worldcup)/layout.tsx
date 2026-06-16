@@ -23,21 +23,25 @@ async function fetchMatchData(): Promise<MatchData | null> {
       .from('tournament_teams')
       .select('id, tournament_id, team_id, group_letter, teams(*)')
       .eq('tournament_id', tour.id),
-    supabase
-      .from('matches')
-      .select('*')
-      .eq('tournament_id', tour.id)
-      .order('scheduled_at', { ascending: true }),
+    supabase.from('matches').select('*').eq('tournament_id', tour.id).order('scheduled_at', { ascending: true }),
     supabase.from('venues').select('*'),
   ]);
 
   const teamIds = new Set<number>();
   (tournamentTeams ?? []).forEach((tt: { team_id: number }) => teamIds.add(tt.team_id));
-  const { data: teams } = await supabase.from('teams').select('*').in('id', [...teamIds]);
+  const { data: teams } =
+    teamIds.size > 0
+      ? await supabase
+          .from('teams')
+          .select('*')
+          .in('id', [...teamIds])
+      : { data: [] };
 
   return {
     teams: (teams ?? []) as DBTeam[],
-    tournamentTeams: (tournamentTeams ?? []) as unknown as DBTournamentTeam[],
+    tournamentTeams: (tournamentTeams ?? []).filter(
+      (tt: { teams: unknown }) => tt.teams != null,
+    ) as unknown as DBTournamentTeam[],
     matches: (matches ?? []) as DBMatch[],
     venues: (venues ?? []) as DBVenue[],
   };
