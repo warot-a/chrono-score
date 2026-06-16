@@ -102,12 +102,12 @@ export function ScheduleView() {
   const now = useTournamentStore(selectNowTs);
   const [stage, setStage] = useState('all');
 
-  const nowDt = new Date(now);
-  const localDateKey = (d: Date) =>
-    `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-  const todayMatches = tour.matches.filter(
-    (m) => localDateKey(new Date(m.t)) === localDateKey(nowDt),
-  );
+  const TWELVE_HOURS = 12 * 60 * 60 * 1000;
+  const todayMatches = tour.matches.filter((m) => {
+    if (m.t > now || m.t < now - TWELVE_HOURS) return false;
+    const v = matchView(tour, m, now);
+    return v.played || v.live;
+  });
   const [grp, setGrp] = useState('all');
 
   const stageTabs = [
@@ -178,7 +178,7 @@ export function ScheduleView() {
           ))}
         </div>
       ) : null}
-      {todayMatches.length > 0 && (
+      {stage === 'all' && todayMatches.length > 0 && (
         <div className="today-block">
           <div className="dayhead">
             <div className="dleft">
