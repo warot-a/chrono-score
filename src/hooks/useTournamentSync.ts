@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef } from 'react';
-
-const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 import { buildFromDB } from '@/lib/realData';
 import { supabase, DBMatch } from '@/lib/supabase';
 import { useTournamentStore } from '@/store/tournamentStore';
 import type { MatchData } from '@/app/(worldcup)/layout';
+
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 /**
  * Single source of side effects for the tournament:

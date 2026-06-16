@@ -13,38 +13,41 @@ export interface MatchData {
 const SLUG = 'worldcup-2026';
 
 async function fetchMatchData(): Promise<MatchData | null> {
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return null;
+  try {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return null;
 
-  const { data: tour } = await supabase.from('tournaments').select('id').eq('slug', SLUG).single();
-  if (!tour) return null;
+    const { data: tour, error: tourError } = await supabase.from('tournaments').select('id').eq('slug', SLUG).single();
+    if (tourError || !tour) return null;
 
-  const [{ data: tournamentTeams }, { data: matches }, { data: venues }] = await Promise.all([
-    supabase
-      .from('tournament_teams')
-      .select('id, tournament_id, team_id, group_letter, teams(*)')
-      .eq('tournament_id', tour.id),
-    supabase.from('matches').select('*').eq('tournament_id', tour.id).order('scheduled_at', { ascending: true }),
-    supabase.from('venues').select('*'),
-  ]);
+    const [
+      { data: tournamentTeams, error: teamsError },
+      { data: matches, error: matchesError },
+      { data: venues, error: venuesError },
+    ] = await Promise.all([
+      supabase
+        .from('tournament_teams')
+        .select('id, tournament_id, team_id, group_letter, teams(*)')
+        .eq('tournament_id', tour.id),
+      supabase.from('matches').select('*').eq('tournament_id', tour.id).order('scheduled_at', { ascending: true }),
+      supabase.from('venues').select('*'),
+    ]);
 
-  const teamIds = new Set<number>();
-  (tournamentTeams ?? []).forEach((tt: { team_id: number }) => teamIds.add(tt.team_id));
-  const { data: teams } =
-    teamIds.size > 0
-      ? await supabase
-          .from('teams')
-          .select('*')
-          .in('id', [...teamIds])
-      : { data: [] };
+    if (teamsError || matchesError || venuesError) return null;
 
-  return {
-    teams: (teams ?? []) as DBTeam[],
-    tournamentTeams: (tournamentTeams ?? []).filter(
+    const validTournamentTeams = (tournamentTeams ?? []).filter(
       (tt: { teams: unknown }) => tt.teams != null,
-    ) as unknown as DBTournamentTeam[],
-    matches: (matches ?? []) as DBMatch[],
-    venues: (venues ?? []) as DBVenue[],
-  };
+    ) as unknown as DBTournamentTeam[];
+
+    return {
+      teams: validTournamentTeams.map((tt) => tt.teams),
+      tournamentTeams: validTournamentTeams,
+      matches: (matches ?? []) as DBMatch[],
+      venues: (venues ?? []) as DBVenue[],
+    };
+  } catch (error) {
+    console.error('Error fetching match data:', error);
+    return null;
+  }
 }
 
 export default async function WorldCupLayout({ children }: { children: React.ReactNode }) {

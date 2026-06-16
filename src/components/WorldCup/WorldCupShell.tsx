@@ -27,7 +27,13 @@ const JUMPS: [string, number][] = [
   ['Done', 39],
 ];
 
-export function WorldCupShell({ children, initialData }: { children: React.ReactNode; initialData?: MatchData | null }) {
+export function WorldCupShell({
+  children,
+  initialData,
+}: {
+  children: React.ReactNode;
+  initialData?: MatchData | null;
+}) {
   useTournamentSync(initialData);
 
   const tour = useTournamentStore((s) => s.tour);
