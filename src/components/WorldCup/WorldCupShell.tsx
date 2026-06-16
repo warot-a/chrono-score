@@ -6,6 +6,7 @@ import { useTournamentStore, selectNowTs } from '@/store/tournamentStore';
 import { useTournamentSync } from '@/hooks/useTournamentSync';
 import { SiteHeader } from './SiteHeader';
 import { SiteFooter } from './SiteFooter';
+import type { MatchData } from '@/app/(worldcup)/layout';
 
 function fmtNow(t: number): string {
   return new Date(t).toLocaleDateString('en-US', {
@@ -26,8 +27,14 @@ const JUMPS: [string, number][] = [
   ['Done', 39],
 ];
 
-export function WorldCupShell({ children }: { children: React.ReactNode }) {
-  useTournamentSync();
+export function WorldCupShell({
+  children,
+  initialData,
+}: {
+  children: React.ReactNode;
+  initialData?: MatchData | null;
+}) {
+  useTournamentSync(initialData);
 
   const tour = useTournamentStore((s) => s.tour);
   const isLive = useTournamentStore((s) => s.isLive);
