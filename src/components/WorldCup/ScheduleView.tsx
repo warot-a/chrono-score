@@ -93,16 +93,56 @@ function MatchRow({ tour, m, now, showDate }: { tour: Tournament; m: Match; now:
   );
 }
 
+function MatchBlock({
+  title,
+  subtitle,
+  badge,
+  matches,
+  tour,
+  now,
+  variant = 'recent',
+}: {
+  title: string;
+  subtitle: string;
+  badge: string;
+  matches: Match[];
+  tour: Tournament;
+  now: number;
+  variant?: 'recent' | 'upcoming';
+}) {
+  return (
+    <div className={variant === 'upcoming' ? 'upcoming-block' : 'today-block'}>
+      <div className="dayhead">
+        <div className="dleft">
+          <span className="dw">{title}</span>
+          <span className="dnum">{subtitle}</span>
+        </div>
+        <span className={`dphase ${variant === 'upcoming' ? 'upcoming-badge' : 'today-badge'}`}>{badge}</span>
+      </div>
+      <div className="mlist">
+        {matches.map((m) => (
+          <MatchRow key={m.id} tour={tour} m={m} now={now} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function ScheduleView() {
   const tour = useTournamentStore((s) => s.tour);
   const now = useTournamentStore(selectNowTs);
   const [stage, setStage] = useState('all');
 
-  const TWELVE_HOURS = 12 * 60 * 60 * 1000;
+  const TWELVE_HOURS = 23 * 60 * 60 * 1000;
   const todayMatches = tour.matches.filter((m) => {
     if (m.timestamp > now || m.timestamp < now - TWELVE_HOURS) return false;
     const v = matchView(tour, m, now);
     return v.played || v.live;
+  });
+  const upcomingMatches = tour.matches.filter((m) => {
+    const v = matchView(tour, m, now);
+    if (v.played) return false;
+    return v.live || (m.timestamp > now && m.timestamp <= now + TWELVE_HOURS);
   });
   const [grp, setGrp] = useState('all');
 
@@ -175,22 +215,25 @@ export function ScheduleView() {
         </div>
       ) : null}
       {stage === 'all' && todayMatches.length > 0 && (
-        <div className="today-block">
-          <div className="dayhead">
-            <div className="dleft">
-              <span className="dw">Today</span>
-              <span className="dnum">
-                {new Date(now).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
-              </span>
-            </div>
-            <span className="dphase today-badge">Today&apos;s Matches</span>
-          </div>
-          <div className="mlist">
-            {todayMatches.map((m) => (
-              <MatchRow key={m.id} tour={tour} m={m} now={now} />
-            ))}
-          </div>
-        </div>
+        <MatchBlock
+          title="Recent Results"
+          subtitle={new Date(now).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+          badge="Recent Results"
+          matches={todayMatches}
+          tour={tour}
+          now={now}
+        />
+      )}
+      {stage === 'all' && upcomingMatches.length > 0 && (
+        <MatchBlock
+          title="Upcoming"
+          subtitle="Next 12 hours"
+          badge="Upcoming Matches"
+          matches={upcomingMatches}
+          tour={tour}
+          now={now}
+          variant="upcoming"
+        />
       )}
       {byDay.length === 0 ? (
         <div className="empty">No matches in this view.</div>
