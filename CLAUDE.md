@@ -64,6 +64,7 @@ WorldCupApp          — clock bar, tab nav, delegates clock state to useClockSt
 ```
 
 Supporting components (also in `src/components/WorldCup/`):
+
 - `SiteHeader` — top nav bar
 - `SiteFooter` — footer with author links from `config.ts`
 - `HeroSection` — landing hero

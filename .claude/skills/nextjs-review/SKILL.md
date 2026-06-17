@@ -8,11 +8,13 @@ description: Spawns a subagent to do a focused code review of Next.js files or t
 ## Quick start
 
 Review current branch changes:
+
 ```
 /nextjs-review
 ```
 
 Target specific files or directory:
+
 ```
 /nextjs-review src/components/WorldCup/
 ```
@@ -20,6 +22,7 @@ Target specific files or directory:
 ## Project context (chrono-score)
 
 Key architecture to be aware of when reviewing:
+
 - **Engine**: `src/lib/engine.ts` — deterministic PRNG simulation, no side effects
 - **Data flow**: `useTournament.ts` → Supabase Realtime → component tree
 - **Component tree**: `WorldCupApp` → `ScheduleView` / `StandingsView` / `BracketView`
@@ -28,12 +31,12 @@ Key architecture to be aware of when reviewing:
 
 ## What gets checked
 
-| Area | Key checks |
-|---|---|
-| **Performance** | `next/image` usage, unnecessary `use client`, missing `Suspense`, unoptimised data fetching, bundle imports |
-| **Security** | Exposed env vars in client components, missing auth guards on API routes, unvalidated input, `dangerouslySetInnerHTML` |
-| **Code quality** | Hook rules, TypeScript strictness, component size, naming consistency, dead code |
-| **Next.js patterns** | App Router conventions, Server vs Client Component split, `fetch` caching, metadata API |
+| Area                 | Key checks                                                                                                             |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **Performance**      | `next/image` usage, unnecessary `use client`, missing `Suspense`, unoptimised data fetching, bundle imports            |
+| **Security**         | Exposed env vars in client components, missing auth guards on API routes, unvalidated input, `dangerouslySetInnerHTML` |
+| **Code quality**     | Hook rules, TypeScript strictness, component size, naming consistency, dead code                                       |
+| **Next.js patterns** | App Router conventions, Server vs Client Component split, `fetch` caching, metadata API                                |
 
 ## Workflow
 
