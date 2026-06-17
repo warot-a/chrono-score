@@ -25,7 +25,7 @@ export function HeroSection({
     <section className="hero">
       <div className="wrap hero-grid">
         <div>
-          <span className="eyebrow">June 11 – July 19, 2026</span>
+          <span className="eyebrow">June 11 - July 19, 2026</span>
           <h1 className="display">
             The biggest <br />
             stage in <span className="o">football</span>

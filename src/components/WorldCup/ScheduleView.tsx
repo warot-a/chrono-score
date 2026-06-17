@@ -50,11 +50,11 @@ function MatchRow({ tour, m, now, showDate }: { tour: Tournament; m: Match; now:
   const dateShort = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
   const status = v.live ? (
-    <span className="stat live">● LIVE</span>
+    <span className="mbadge live">● LIVE</span>
   ) : v.played ? (
-    <span className="stat ft">FULL TIME</span>
+    <span className="mbadge ft">FULL TIME</span>
   ) : (
-    <span className="stat up">UPCOMING</span>
+    <span className="mbadge up">UPCOMING</span>
   );
 
   const decided =
