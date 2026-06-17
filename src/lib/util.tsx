@@ -140,6 +140,7 @@ export function liveStandings(tour: Tournament, g: string, now: number): Standin
     .forEach((m) => {
       const h = rows[m.home],
         a = rows[m.away];
+      if (!h || !a) return;
       h.P++;
       a.P++;
       h.GF += m.hs;
