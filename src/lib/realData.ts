@@ -146,6 +146,7 @@ export function buildFromDB(
       venue: venue?.name ?? '',
       city: venue?.city ?? '',
       countryFlag: venue ? countryFlag(venue.country) : '🏟️',
+      broadcasters: dm.broadcasters?.length ? dm.broadcasters : undefined,
     };
 
     if (dm.stage === 'ko') {

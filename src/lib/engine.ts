@@ -161,6 +161,7 @@ export interface Match {
   venue: string;
   city: string;
   countryFlag: string;
+  broadcasters?: string[];
   // ko-only
   no?: number;
   refs?: string[];

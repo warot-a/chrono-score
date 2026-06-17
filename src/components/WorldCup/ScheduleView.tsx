@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Tournament, Match } from '@/lib/engine';
 import { Flag, matchView, groupColor } from '@/lib/util';
 import { useTournamentStore, selectNowTs } from '@/store/tournamentStore';
@@ -85,6 +86,7 @@ function MatchRow({ tour, m, now, showDate }: { tour: Tournament; m: Match; now:
       </div>
       <div className="mstatus">
         <div className="vrow">
+          {m.broadcasters?.includes('Monomax Sport') && <span className="mbcast">📺 Monomax Sport</span>}
           {status}
           {decided}
         </div>

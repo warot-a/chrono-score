@@ -38,6 +38,7 @@ export interface DBMatch {
   home_slot: string | null;
   away_slot: string | null;
   metadata: Record<string, unknown>;
+  broadcasters: string[] | null;
 }
 
 export interface DBTeam {
