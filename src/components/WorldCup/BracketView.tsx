@@ -38,7 +38,7 @@ function BracketCard({
 }) {
   const m = tour.ko[no];
   const v = matchView(tour, m, now);
-  const d = new Date(m.t);
+  const d = new Date(m.timestamp);
   const dlabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
   function row(code: string | null, label: string, score: number, isWin: boolean) {
@@ -59,8 +59,8 @@ function BracketCard({
         <span>#{no}</span>
         <span className={v.live ? 'bm-when live' : 'bm-when'}>{v.live ? 'LIVE' : dlabel}</span>
       </div>
-      {row(v.hCode, v.hLabel, v.hs, hWin)}
-      {row(v.aCode, v.aLabel, v.as, aWin)}
+      {row(v.hCode, v.hLabel, v.homeScore, hWin)}
+      {row(v.aCode, v.aLabel, v.awayScore, aWin)}
       {v.played && v.decided ? <div className="bm-foot">{v.decided === 'pens' ? 'pens' : 'a.e.t.'}</div> : null}
     </div>
   );
@@ -163,10 +163,10 @@ export function BracketView() {
     };
   }, [recompute]);
 
-  const r32range = fmtRange(tour.ko[73].t, tour.ko[88].t);
-  const r16range = fmtRange(tour.ko[89].t, tour.ko[96].t);
-  const qfrange = fmtRange(tour.ko[97].t, tour.ko[100].t);
-  const sfrange = fmtRange(tour.ko[101].t, tour.ko[102].t);
+  const r32range = fmtRange(tour.ko[73].timestamp, tour.ko[88].timestamp);
+  const r16range = fmtRange(tour.ko[89].timestamp, tour.ko[96].timestamp);
+  const qfrange = fmtRange(tour.ko[97].timestamp, tour.ko[100].timestamp);
+  const sfrange = fmtRange(tour.ko[101].timestamp, tour.ko[102].timestamp);
 
   const fin = matchView(tour, tour.ko[FINAL], now);
   const champ = fin.played ? fin.winnerCode : null;

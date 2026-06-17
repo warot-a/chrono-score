@@ -72,22 +72,22 @@ const GROUPS: Record<string, string[]> = {
 const GROUP_LETTERS = Object.keys(GROUPS);
 
 const VENUES = [
-  { city: 'Mexico City', stad: 'Estadio Azteca', cc: '🇲🇽' },
-  { city: 'Guadalajara', stad: 'Estadio Guadalajara', cc: '🇲🇽' },
-  { city: 'Monterrey', stad: 'Estadio Monterrey', cc: '🇲🇽' },
-  { city: 'Toronto', stad: 'Toronto Stadium', cc: '🇨🇦' },
-  { city: 'Vancouver', stad: 'BC Place Vancouver', cc: '🇨🇦' },
-  { city: 'Los Angeles', stad: 'Los Angeles Stadium', cc: '🇺🇸' },
-  { city: 'San Francisco Bay', stad: 'Bay Area Stadium', cc: '🇺🇸' },
-  { city: 'Seattle', stad: 'Seattle Stadium', cc: '🇺🇸' },
-  { city: 'Kansas City', stad: 'Kansas City Stadium', cc: '🇺🇸' },
-  { city: 'Dallas', stad: 'Dallas Stadium', cc: '🇺🇸' },
-  { city: 'Houston', stad: 'Houston Stadium', cc: '🇺🇸' },
-  { city: 'Atlanta', stad: 'Atlanta Stadium', cc: '🇺🇸' },
-  { city: 'Miami', stad: 'Miami Stadium', cc: '🇺🇸' },
-  { city: 'New York / NJ', stad: 'New York New Jersey Stadium', cc: '🇺🇸' },
-  { city: 'Philadelphia', stad: 'Philadelphia Stadium', cc: '🇺🇸' },
-  { city: 'Boston', stad: 'Boston Stadium', cc: '🇺🇸' },
+  { city: 'Mexico City', stad: 'Estadio Azteca', countryFlag: '🇲🇽' },
+  { city: 'Guadalajara', stad: 'Estadio Guadalajara', countryFlag: '🇲🇽' },
+  { city: 'Monterrey', stad: 'Estadio Monterrey', countryFlag: '🇲🇽' },
+  { city: 'Toronto', stad: 'Toronto Stadium', countryFlag: '🇨🇦' },
+  { city: 'Vancouver', stad: 'BC Place Vancouver', countryFlag: '🇨🇦' },
+  { city: 'Los Angeles', stad: 'Los Angeles Stadium', countryFlag: '🇺🇸' },
+  { city: 'San Francisco Bay', stad: 'Bay Area Stadium', countryFlag: '🇺🇸' },
+  { city: 'Seattle', stad: 'Seattle Stadium', countryFlag: '🇺🇸' },
+  { city: 'Kansas City', stad: 'Kansas City Stadium', countryFlag: '🇺🇸' },
+  { city: 'Dallas', stad: 'Dallas Stadium', countryFlag: '🇺🇸' },
+  { city: 'Houston', stad: 'Houston Stadium', countryFlag: '🇺🇸' },
+  { city: 'Atlanta', stad: 'Atlanta Stadium', countryFlag: '🇺🇸' },
+  { city: 'Miami', stad: 'Miami Stadium', countryFlag: '🇺🇸' },
+  { city: 'New York / NJ', stad: 'New York New Jersey Stadium', countryFlag: '🇺🇸' },
+  { city: 'Philadelphia', stad: 'Philadelphia Stadium', countryFlag: '🇺🇸' },
+  { city: 'Boston', stad: 'Boston Stadium', countryFlag: '🇺🇸' },
 ];
 
 function rng(seed: number) {
@@ -146,7 +146,7 @@ export interface Team {
 export interface Venue {
   city: string;
   stad: string;
-  cc: string;
+  countryFlag: string;
 }
 export interface Match {
   id: string;
@@ -155,12 +155,12 @@ export interface Match {
   round: string;
   home: string;
   away: string;
-  hs: number;
-  as: number;
-  t: number;
+  homeScore: number;
+  awayScore: number;
+  timestamp: number;
   venue: string;
   city: string;
-  cc: string;
+  countryFlag: string;
   // ko-only
   no?: number;
   refs?: string[];
@@ -261,12 +261,12 @@ export function build(seed: number): Tournament {
           round: 'Matchday ' + md,
           home: hk,
           away: ak,
-          hs,
-          as: as_,
-          t: ts(day, KICK[kickI++ % KICK.length]),
+          homeScore: hs,
+          awayScore: as_,
+          timestamp: ts(day, KICK[kickI++ % KICK.length]),
           venue: v.stad,
           city: v.city,
-          cc: v.cc,
+          countryFlag: v.countryFlag,
         });
       });
     }
@@ -286,15 +286,15 @@ export function build(seed: number): Tournament {
           a = rows[m.away];
         h.P++;
         a.P++;
-        h.GF += m.hs;
-        h.GA += m.as;
-        a.GF += m.as;
-        a.GA += m.hs;
-        if (m.hs > m.as) {
+        h.GF += m.homeScore;
+        h.GA += m.awayScore;
+        a.GF += m.awayScore;
+        a.GA += m.homeScore;
+        if (m.homeScore > m.awayScore) {
           h.W++;
           h.Pts += 3;
           a.L++;
-        } else if (m.hs < m.as) {
+        } else if (m.homeScore < m.awayScore) {
           a.W++;
           a.Pts += 3;
           h.L++;
@@ -445,10 +445,10 @@ export function build(seed: number): Tournament {
       } else {
         decided = 'pens';
         const pw = rand() < 0.5 + dh / 200;
-        return { hs, as: as_, decided, penWinner: pw ? hk : ak };
+        return { homeScore: hs, awayScore: as_, decided, penWinner: pw ? hk : ak };
       }
     }
-    return { hs, as: as_, decided };
+    return { homeScore: hs, awayScore: as_, decided };
   }
 
   const KO_DAYS: Record<string, { start?: number; end?: number; day?: number }> = {
@@ -483,25 +483,25 @@ export function build(seed: number): Tournament {
         refs: [r1, r2],
         home: hk || '',
         away: ak || '',
-        hs: 0,
-        as: 0,
-        t: ts(day, KICK[kickI++ % KICK.length]),
+        homeScore: 0,
+        awayScore: 0,
+        timestamp: ts(day, KICK[kickI++ % KICK.length]),
         venue: v.stad,
         city: v.city,
-        cc: v.cc,
+        countryFlag: v.countryFlag,
       };
       if (hk && ak) {
         const r = simKO(hk, ak);
-        m.hs = r.hs;
-        m.as = r.as;
+        m.homeScore = r.homeScore;
+        m.awayScore = r.awayScore;
         m.decided = r.decided || '';
         let wk, lk;
         if (r.decided === 'pens') {
           wk = r.penWinner;
           lk = wk === hk ? ak : hk;
         } else {
-          wk = r.hs > r.as ? hk : ak;
-          lk = r.hs > r.as ? ak : hk;
+          wk = r.homeScore > r.awayScore ? hk : ak;
+          lk = r.homeScore > r.awayScore ? ak : hk;
         }
         m.winnerCode = wk;
         m.loserCode = lk;
@@ -521,7 +521,7 @@ export function build(seed: number): Tournament {
   const runnerUp = ko[104] ? ko[104].loserCode || null : null;
   const third = ko[103] ? ko[103].winnerCode || null : null;
 
-  matches.sort((a, b) => a.t - b.t || a.id.localeCompare(b.id));
+  matches.sort((a, b) => a.timestamp - b.timestamp || a.id.localeCompare(b.id));
 
   return {
     seed: seed || 1,

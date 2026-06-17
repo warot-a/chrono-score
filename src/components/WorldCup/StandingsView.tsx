@@ -18,7 +18,7 @@ function GroupCard({
 }) {
   const rows = liveStandings(tour, g, now);
   const total = 6;
-  const playedN = tour.matches.filter((m) => m.stage === 'group' && m.group === g && m.t <= now).length;
+  const playedN = tour.matches.filter((m) => m.stage === 'group' && m.group === g && m.timestamp <= now).length;
   const done = groupComplete(tour, g, now);
   const col = groupColor(g);
 
@@ -121,7 +121,7 @@ export function StandingsView() {
   const now = useTournamentStore(selectNowTs);
   const thirds = liveThirds(tour, now);
   const qualThirdGroups = thirds.slice(0, 8).map((x) => x.g!);
-  const anyPlayed = tour.matches.some((m) => m.stage === 'group' && m.t <= now);
+  const anyPlayed = tour.matches.some((m) => m.stage === 'group' && m.timestamp <= now);
 
   return (
     <div>

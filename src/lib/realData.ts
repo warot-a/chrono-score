@@ -140,12 +140,12 @@ export function buildFromDB(
       round: dm.round_name,
       home: homeCode,
       away: awayCode,
-      hs: dm.home_score ?? 0,
-      as: dm.away_score ?? 0,
-      t,
+      homeScore: dm.home_score ?? 0,
+      awayScore: dm.away_score ?? 0,
+      timestamp: t,
       venue: venue?.name ?? '',
       city: venue?.city ?? '',
-      cc: venue ? countryFlag(venue.country) : '🏟️',
+      countryFlag: venue ? countryFlag(venue.country) : '🏟️',
     };
 
     if (dm.stage === 'ko') {
@@ -184,7 +184,7 @@ export function buildFromDB(
     return base;
   });
 
-  matches.sort((a, b) => a.t - b.t);
+  matches.sort((a, b) => a.timestamp - b.timestamp);
 
   // 5. Compute group standings from finished group matches
   const standingsMap: Record<string, Record<string, StandingRow>> = {};
@@ -207,17 +207,17 @@ export function buildFromDB(
       if (!h || !a) return;
       h.P++;
       a.P++;
-      h.GF += m.hs;
-      h.GA += m.as;
-      a.GF += m.as;
-      a.GA += m.hs;
+      h.GF += m.homeScore;
+      h.GA += m.awayScore;
+      a.GF += m.awayScore;
+      a.GA += m.homeScore;
       h.GD = h.GF - h.GA;
       a.GD = a.GF - a.GA;
-      if (m.hs > m.as) {
+      if (m.homeScore > m.awayScore) {
         h.W++;
         h.Pts += 3;
         a.L++;
-      } else if (m.hs < m.as) {
+      } else if (m.homeScore < m.awayScore) {
         a.W++;
         a.Pts += 3;
         h.L++;
@@ -286,7 +286,7 @@ export function buildFromDB(
   const VENUES_ARR: Venue[] = dbVenues.map((v) => ({
     city: v.city,
     stad: v.name,
-    cc: countryFlag(v.country),
+    countryFlag: countryFlag(v.country),
   }));
 
   return {

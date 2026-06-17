@@ -19,18 +19,18 @@ function Score({ v }: { v: ReturnType<typeof matchView> }) {
     return <div className="mscore vs">vs</div>;
   }
   if (!v.played) return <div className="mscore vs">vs</div>;
-  const hw = v.winnerCode ? v.winnerCode === v.hCode : v.hs > v.as;
-  const aw = v.winnerCode ? v.winnerCode === v.aCode : v.as > v.hs;
+  const hw = v.winnerCode ? v.winnerCode === v.hCode : v.homeScore > v.awayScore;
+  const aw = v.winnerCode ? v.winnerCode === v.aCode : v.awayScore > v.homeScore;
   return (
     <div className={'mscore' + (v.live ? ' live' : '')}>
-      <b className={hw ? 'w' : ''}>{v.hs}</b>
+      <b className={hw ? 'w' : ''}>{v.homeScore}</b>
       <span className="dash">–</span>
-      <b className={aw ? 'w' : ''}>{v.as}</b>
+      <b className={aw ? 'w' : ''}>{v.awayScore}</b>
     </div>
   );
 }
 
-export function MatchRow({ tour, m, now, showDate }: { tour: Tournament; m: Match; now: number; showDate?: boolean }) {
+function MatchRow({ tour, m, now, showDate }: { tour: Tournament; m: Match; now: number; showDate?: boolean }) {
   const v = matchView(tour, m, now);
   const tag =
     m.stage === 'group' ? (
@@ -40,7 +40,7 @@ export function MatchRow({ tour, m, now, showDate }: { tour: Tournament; m: Matc
     ) : (
       <span className="rtag">{ROUND_ABBR[m.round] || 'KO'}</span>
     );
-  const d = new Date(m.t);
+  const d = new Date(m.timestamp);
   const time = (() => {
     let h = d.getHours();
     const ap = h >= 12 ? 'PM' : 'AM';
@@ -100,7 +100,7 @@ export function ScheduleView() {
 
   const TWELVE_HOURS = 12 * 60 * 60 * 1000;
   const todayMatches = tour.matches.filter((m) => {
-    if (m.t > now || m.t < now - TWELVE_HOURS) return false;
+    if (m.timestamp > now || m.timestamp < now - TWELVE_HOURS) return false;
     const v = matchView(tour, m, now);
     return v.played || v.live;
   });
@@ -126,13 +126,13 @@ export function ScheduleView() {
     );
   if (stage === 'group' && grp !== 'all') list = list.filter((m) => m.group === grp);
 
-  const byDay: { key: string; t: number; items: Match[] }[] = [];
+  const byDay: { key: string; timestamp: number; items: Match[] }[] = [];
   const idx: Record<string, number> = {};
   list.forEach((m) => {
-    const key = new Date(m.t).toISOString().slice(0, 10);
+    const key = new Date(m.timestamp).toISOString().slice(0, 10);
     if (idx[key] == null) {
       idx[key] = byDay.length;
-      byDay.push({ key, t: m.t, items: [] });
+      byDay.push({ key, timestamp: m.timestamp, items: [] });
     }
     byDay[idx[key]].items.push(m);
   });
@@ -196,11 +196,11 @@ export function ScheduleView() {
         <div className="empty">No matches in this view.</div>
       ) : (
         byDay.map((day) => {
-          const dd = new Date(day.t);
+          const dd = new Date(day.timestamp);
           const dn = dd.toLocaleDateString('en-US', { weekday: 'long' });
           const dl = dd.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
           const ph = (() => {
-            const dayN = (day.t - tour.DAY0) / tour.DAYMS;
+            const dayN = (day.timestamp - tour.DAY0) / tour.DAYMS;
             if (dayN < 7) return 'Matchday 1';
             if (dayN < 13) return 'Matchday 2';
             if (dayN < 17) return 'Matchday 3';

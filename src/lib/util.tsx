@@ -27,7 +27,7 @@ export const SLOT_LABEL: Record<string, string> = {
 };
 
 export function groupComplete(tour: Tournament, g: string, now: number): boolean {
-  return tour.matches.every((m) => !(m.stage === 'group' && m.group === g) || m.t <= now);
+  return tour.matches.every((m) => !(m.stage === 'group' && m.group === g) || m.timestamp <= now);
 }
 export function allGroupsComplete(tour: Tournament, now: number): boolean {
   return tour.GROUP_LETTERS.every((g) => groupComplete(tour, g, now));
@@ -50,7 +50,7 @@ export function koFT(tour: Tournament, no: number, now: number): boolean {
   const m = tour.ko[no];
   if (!m) return false;
   const { h, a } = koTeams(tour, m, now);
-  return !!(h.code && a.code && m.t <= now);
+  return !!(h.code && a.code && m.timestamp <= now);
 }
 
 export function resolveRef(tour: Tournament, ref: string, now: number): { code: string | null; label: string } {
@@ -90,8 +90,8 @@ export interface MatchView {
   aLabel: string;
   played: boolean;
   live: boolean;
-  hs: number;
-  as: number;
+  homeScore: number;
+  awayScore: number;
   decided: string;
   winnerCode?: string;
   penWinner?: string | null;
@@ -99,8 +99,8 @@ export interface MatchView {
 
 export function matchView(tour: Tournament, m: Match, now: number): MatchView {
   if (m.stage === 'group') {
-    const played = m.t <= now;
-    const live = played && now < m.t + LIVE_MS;
+    const played = m.timestamp <= now;
+    const live = played && now < m.timestamp + LIVE_MS;
     return {
       hCode: m.home,
       aCode: m.away,
@@ -108,15 +108,15 @@ export function matchView(tour: Tournament, m: Match, now: number): MatchView {
       aLabel: tour.teams[m.away]?.n ?? m.away,
       played,
       live,
-      hs: m.hs,
-      as: m.as,
+      homeScore: m.homeScore,
+      awayScore: m.awayScore,
       decided: '',
     };
   }
   const { h, a } = koTeams(tour, m, now);
   const bothKnown = !!(h.code && a.code);
-  const played = bothKnown && m.t <= now;
-  const live = played && now < m.t + LIVE_MS;
+  const played = bothKnown && m.timestamp <= now;
+  const live = played && now < m.timestamp + LIVE_MS;
   return {
     hCode: h.code,
     aCode: a.code,
@@ -124,8 +124,8 @@ export function matchView(tour: Tournament, m: Match, now: number): MatchView {
     aLabel: a.code ? tour.teams[a.code].n : a.label,
     played,
     live,
-    hs: m.hs,
-    as: m.as,
+    homeScore: m.homeScore,
+    awayScore: m.awayScore,
     decided: m.decided || '',
     winnerCode: m.winnerCode,
     penWinner: m.decided === 'pens' ? m.winnerCode : null,
@@ -136,22 +136,22 @@ export function liveStandings(tour: Tournament, g: string, now: number): Standin
   const rows: Record<string, StandingRow> = {};
   tour.GROUPS[g].forEach((k) => (rows[k] = { code: k, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, GD: 0, Pts: 0 }));
   tour.matches
-    .filter((m) => m.stage === 'group' && m.group === g && m.t <= now)
+    .filter((m) => m.stage === 'group' && m.group === g && m.timestamp <= now)
     .forEach((m) => {
       const h = rows[m.home],
         a = rows[m.away];
       if (!h || !a) return;
       h.P++;
       a.P++;
-      h.GF += m.hs;
-      h.GA += m.as;
-      a.GF += m.as;
-      a.GA += m.hs;
-      if (m.hs > m.as) {
+      h.GF += m.homeScore;
+      h.GA += m.awayScore;
+      a.GF += m.awayScore;
+      a.GA += m.homeScore;
+      if (m.homeScore > m.awayScore) {
         h.W++;
         h.Pts += 3;
         a.L++;
-      } else if (m.hs < m.as) {
+      } else if (m.homeScore < m.awayScore) {
         a.W++;
         a.Pts += 3;
         h.L++;
