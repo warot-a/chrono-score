@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 
 const TABS: [string, string][] = [
   ['/schedule', 'Schedule'],
@@ -11,6 +12,23 @@ const TABS: [string, string][] = [
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const [dark, setDark] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return document.documentElement.classList.contains('dark');
+  });
+
+  function toggleTheme() {
+    const next = !dark;
+    setDark(next);
+    if (next) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('wc_theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('wc_theme', 'light');
+    }
+  }
+
   return (
     <header className="site">
       <div className="wrap hrow">
@@ -33,6 +51,14 @@ export function SiteHeader() {
             About
           </a>
         </nav>
+        <button
+          className="playbtn theme-toggle"
+          onClick={toggleTheme}
+          aria-label="Toggle theme"
+          title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {dark ? '☀' : '☾'}
+        </button>
       </div>
     </header>
   );

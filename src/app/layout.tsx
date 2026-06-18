@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Anton, Archivo } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 
 const anton = Anton({
@@ -28,8 +29,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${anton.variable} ${archivo.variable}`}>
-      <body>{children}</body>
+    <html lang="en" className={`${anton.variable} ${archivo.variable}`} suppressHydrationWarning>
+      <body>
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('wc_theme');if(t!=='light')document.documentElement.classList.add('dark');})()` }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
