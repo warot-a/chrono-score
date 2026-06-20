@@ -68,8 +68,13 @@ function MatchRow({ tour, m, now, showDate }: { tour: Tournament; m: Match; now:
   const hWin = v.played && v.winnerCode === v.hCode;
   const aWin = v.played && v.winnerCode === v.aCode;
 
-  return (
-    <div className={'mrow ' + (v.live ? 'is-live' : v.played ? 'is-ft' : 'is-up')}>
+  const searchUrl =
+    v.hCode && v.aCode
+      ? `https://www.google.com/search?q=${encodeURIComponent(`${v.hLabel} vs ${v.aLabel} world cup 2026`)}`
+      : null;
+
+  const row = (
+    <div className={'mrow ' + (v.live ? 'is-live' : v.played ? 'is-ft' : 'is-up') + (searchUrl ? ' clickable' : '')}>
       <div className="mtime">
         <span className="t">{time}</span>
         {showDate ? <span className="d">{dateShort}</span> : null}
@@ -93,6 +98,15 @@ function MatchRow({ tour, m, now, showDate }: { tour: Tournament; m: Match; now:
       </div>
     </div>
   );
+
+  if (searchUrl) {
+    return (
+      <a href={searchUrl} target="_blank" rel="noopener noreferrer" title="Search this match on Google" style={{ display: 'contents' }}>
+        {row}
+      </a>
+    );
+  }
+  return row;
 }
 
 function MatchBlock({

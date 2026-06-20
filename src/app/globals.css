@@ -785,6 +785,13 @@ main {
   border-color: rgba(65, 146, 40, 0.45);
   background: var(--surface-2);
 }
+.mrow.clickable {
+  cursor: pointer;
+}
+a:has(.mrow.clickable):hover .mrow.clickable {
+  border-color: rgba(65, 146, 40, 0.6);
+  background: var(--surface-2);
+}
 .mrow.is-up {
   opacity: 0.82;
 }
