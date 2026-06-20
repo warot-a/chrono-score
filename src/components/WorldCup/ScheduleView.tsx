@@ -124,16 +124,18 @@ function MatchBlock({
   matches: Match[];
   tour: Tournament;
   now: number;
-  variant?: 'recent' | 'upcoming';
+  variant?: 'recent' | 'upcoming' | 'live';
 }) {
+  const blockClass = variant === 'upcoming' ? 'upcoming-block' : variant === 'live' ? 'live-block' : 'today-block';
+  const badgeClass = variant === 'upcoming' ? 'upcoming-badge' : variant === 'live' ? 'live-badge' : 'today-badge';
   return (
-    <div className={variant === 'upcoming' ? 'upcoming-block' : 'today-block'}>
+    <div className={blockClass}>
       <div className="dayhead">
         <div className="dleft">
           <span className="dw">{title}</span>
           <span className="dnum">{subtitle}</span>
         </div>
-        <span className={`dphase ${variant === 'upcoming' ? 'upcoming-badge' : 'today-badge'}`}>{badge}</span>
+        <span className={`dphase ${badgeClass}`}>{badge}</span>
       </div>
       <div className="mlist">
         {matches.map((m) => (
@@ -155,10 +157,11 @@ export function ScheduleView() {
     const v = matchView(tour, m, now);
     return v.played || v.live;
   });
+  const liveMatches = tour.matches.filter((m) => matchView(tour, m, now).live);
   const upcomingMatches = tour.matches.filter((m) => {
     const v = matchView(tour, m, now);
-    if (v.played) return false;
-    return v.live || (m.timestamp > now && m.timestamp <= now + TWELVE_HOURS);
+    if (v.played || v.live) return false;
+    return m.timestamp > now && m.timestamp <= now + TWELVE_HOURS;
   });
   const [grp, setGrp] = useState('all');
 
@@ -230,6 +233,17 @@ export function ScheduleView() {
           ))}
         </div>
       ) : null}
+      {stage === 'all' && liveMatches.length > 0 && (
+        <MatchBlock
+          title="Live Now"
+          subtitle="In Progress"
+          badge="● LIVE"
+          matches={liveMatches}
+          tour={tour}
+          now={now}
+          variant="live"
+        />
+      )}
       {stage === 'all' && todayMatches.length > 0 && (
         <MatchBlock
           title="Recent Results"

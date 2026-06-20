@@ -5,6 +5,15 @@ import { Tournament } from '@/lib/engine';
 import { Flag, liveStandings, liveThirds, groupColor, allGroupsComplete, groupComplete } from '@/lib/util';
 import { useTournamentStore, selectNowTs } from '@/store/tournamentStore';
 
+const LIVE_MS = 2 * 3600 * 1000;
+
+interface LiveMatchInfo {
+  homeScore: number;
+  awayScore: number;
+  opponentCode: string;
+  isHome: boolean;
+}
+
 function GroupCard({
   tour,
   g,
@@ -21,6 +30,14 @@ function GroupCard({
   const playedN = tour.matches.filter((m) => m.stage === 'group' && m.group === g && m.timestamp <= now).length;
   const done = groupComplete(tour, g, now);
   const col = groupColor(g);
+
+  const liveMatchMap = new Map<string, LiveMatchInfo>();
+  tour.matches
+    .filter((m) => m.stage === 'group' && m.group === g && m.timestamp <= now && now < m.timestamp + LIVE_MS)
+    .forEach((m) => {
+      liveMatchMap.set(m.home, { homeScore: m.homeScore, awayScore: m.awayScore, opponentCode: m.away, isHome: true });
+      liveMatchMap.set(m.away, { homeScore: m.homeScore, awayScore: m.awayScore, opponentCode: m.home, isHome: false });
+    });
 
   function rowClass(i: number): string {
     if (i < 2) return 'adv';
@@ -53,28 +70,41 @@ function GroupCard({
           </tr>
         </thead>
         <tbody>
-          {rows.map((r, i) => (
-            <tr key={r.code} className={rowClass(i)}>
-              <td className="c-pos">
-                <span className="posdot">{i + 1}</span>
-              </td>
-              <td className="c-team">
-                <Flag code={r.code} tour={tour} />
-                <span className="tn">{tour.teams[r.code].n}</span>
-                {tour.teams[r.code].h ? <span className="hosttag">H</span> : null}
-              </td>
-              <td>{r.P}</td>
-              <td>{r.W}</td>
-              <td>{r.D}</td>
-              <td>{r.L}</td>
-              <td className="hide-s">{r.GF}</td>
-              <td className="hide-s">{r.GA}</td>
-              <td className="gd">{(r.GD > 0 ? '+' : '') + r.GD}</td>
-              <td className="c-pts">
-                <b>{r.Pts}</b>
-              </td>
-            </tr>
-          ))}
+          {rows.map((r, i) => {
+            const lm = liveMatchMap.get(r.code);
+            return (
+              <tr key={r.code} className={rowClass(i) + (lm ? ' is-live' : '')}>
+                <td className="c-pos">
+                  <span className="posdot">{i + 1}</span>
+                </td>
+                <td className="c-team">
+                  <Flag code={r.code} tour={tour} />
+                  <span className="tn">{tour.teams[r.code].n}</span>
+                  {tour.teams[r.code].h ? <span className="hosttag">H</span> : null}
+                  {lm ? (
+                    <span className="row-live-info">
+                      <span className="row-live-dot" />
+                      <span className="row-live-score">
+                        {lm.isHome ? lm.homeScore : lm.awayScore}
+                        {'-'}
+                        {lm.isHome ? lm.awayScore : lm.homeScore}
+                      </span>
+                    </span>
+                  ) : null}
+                </td>
+                <td>{r.P}</td>
+                <td>{r.W}</td>
+                <td>{r.D}</td>
+                <td>{r.L}</td>
+                <td className="hide-s">{r.GF}</td>
+                <td className="hide-s">{r.GA}</td>
+                <td className="gd">{(r.GD > 0 ? '+' : '') + r.GD}</td>
+                <td className="c-pts">
+                  <b>{r.Pts}</b>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

@@ -652,6 +652,47 @@ main {
 .dayblock {
   margin-bottom: 30px;
 }
+.live-block {
+  margin-bottom: 40px;
+  padding: 20px 20px 22px;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.06) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  border-radius: 12px;
+  position: relative;
+  box-shadow: 0 0 40px rgba(239, 68, 68, 0.12);
+}
+.live-block::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  box-shadow: 0 0 48px rgba(239, 68, 68, 0.15);
+  pointer-events: none;
+}
+.live-block .dayhead {
+  border-bottom-color: rgba(239, 68, 68, 0.4);
+}
+.live-block .dayhead::after {
+  width: 100%;
+  background: linear-gradient(90deg, #ef4444, transparent);
+}
+.live-block .dw {
+  color: #ef4444;
+}
+.live-badge {
+  background: rgba(239, 68, 68, 0.18);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  animation: pulse-badge 1.5s ease-in-out infinite;
+}
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
 .today-block {
   margin-bottom: 40px;
   padding: 20px 20px 22px;
@@ -1099,6 +1140,30 @@ table.gtable {
   color: var(--gold);
   padding: 1px 5px;
   border-radius: 5px;
+}
+.row-live-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  flex-shrink: 0;
+}
+.row-live-info {
+  animation: pulse-badge 1.5s ease-in-out infinite;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+}
+.row-live-score {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ef4444;
+  letter-spacing: 0.03em;
+}
+tr.is-live td.c-team {
+  background: rgba(239, 68, 68, 0.04);
 }
 tr.adv {
   background: linear-gradient(90deg, rgba(243, 196, 77, 0.1), transparent);
