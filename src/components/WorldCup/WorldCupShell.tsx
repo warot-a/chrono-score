@@ -6,6 +6,7 @@ import { useTournamentStore, selectNowTs } from '@/store/tournamentStore';
 import { useTournamentSync } from '@/hooks/useTournamentSync';
 import { SiteHeader } from './SiteHeader';
 import { SiteFooter } from './SiteFooter';
+import { WhatsNewDialog } from './WhatsNewDialog';
 import type { MatchData } from '@/app/(worldcup)/layout';
 
 function fmtNow(t: number): string {
@@ -50,6 +51,7 @@ export function WorldCupShell({
 
   return (
     <>
+      <WhatsNewDialog />
       <SiteHeader />
 
       {/* ---------- Clock bar ---------- */}
