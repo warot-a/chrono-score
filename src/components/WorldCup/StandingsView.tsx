@@ -135,6 +135,7 @@ function ThirdRace({ tour, now }: { tour: Tournament; now: number }) {
               </span>
               <Flag code={r.code} tour={tour} />
               <span className="tp-name">{tour.teams[r.code].n}</span>
+              <span className="tp-stat dim">{r.P} MP</span>
               <span className="tp-stat">{r.Pts} pts</span>
               <span className="tp-stat dim">{(r.GD > 0 ? '+' : '') + r.GD}</span>
               {i < 8 ? <span className="tp-ok">✓</span> : null}
