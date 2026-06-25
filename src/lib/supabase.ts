@@ -64,3 +64,15 @@ export interface DBTournamentTeam {
   group_letter: string | null;
   teams: DBTeam;
 }
+
+export interface DBSyncLog {
+  id: number;
+  triggered_at: string; // ISO string (UTC)
+  status: 'ok' | 'error';
+  duration_ms: number | null;
+  fd_status: number | null;
+  match_count: number | null;
+  upserted: number | null;
+  error: string | null;
+  details: Record<string, unknown> | null;
+}

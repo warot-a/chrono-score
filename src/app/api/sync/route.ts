@@ -63,13 +63,33 @@ interface FDMatch {
   venue?: string;
 }
 
-async function fdFetch(path: string) {
+interface FDFetchResult {
+  json: unknown;
+  status: number;
+}
+
+async function fdFetch(path: string): Promise<FDFetchResult> {
   const res = await fetch(FD_BASE + path, {
     headers: { 'X-Auth-Token': process.env.FOOTBALL_DATA_API_KEY! },
     next: { revalidate: 0 },
   });
-  if (!res.ok) throw new Error(`football-data.org ${path}: ${res.status}`);
-  return res.json();
+  if (!res.ok) throw new Error(`football-data.org ${path}: ${res.status} ${res.statusText}`);
+  return { json: await res.json(), status: res.status };
+}
+
+// fire-and-forget: ไม่ await เพื่อไม่ให้กระทบ response latency
+function insertSyncLog(
+  db: ReturnType<typeof supabaseAdmin>,
+  log: {
+    status: 'ok' | 'error';
+    duration_ms: number;
+    fd_status: number | null;
+    match_count: number | null;
+    upserted: number | null;
+    error: string | null;
+  },
+) {
+  void db.from('sync_logs').insert(log);
 }
 
 async function handler(req: NextRequest) {
@@ -79,106 +99,151 @@ async function handler(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const startTime = Date.now();
   const db = supabaseAdmin();
 
-  // Get tournament id
-  const { data: tour, error: tErr } = await db.from('tournaments').select('id').eq('slug', WC_SLUG).single();
+  // ── ตัวแปรสำหรับ logging ──────────────────────────────────────────────────
+  let fdHttpStatus: number | null = null;
+  let matchCount: number | null = null;
 
-  if (tErr || !tour) {
-    return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
-  }
+  try {
+    // Get tournament id
+    const { data: tour, error: tErr } = await db.from('tournaments').select('id').eq('slug', WC_SLUG).single();
 
-  // Fetch all matches from football-data.org
-  const data = await fdFetch(`/competitions/WC/matches`);
-  const fdMatches: FDMatch[] = data.matches;
-
-  // Build team-code → DB team id map
-  const { data: dbTeams } = await db.from('teams').select('id, code');
-  const teamCodeToId: Record<string, number> = {};
-  (dbTeams ?? []).forEach((t: { id: number; code: string }) => {
-    teamCodeToId[t.code] = t.id;
-  });
-
-  // Build venue name → DB venue id map
-  const { data: dbVenues } = await db.from('venues').select('id, name');
-  const venueNameToId: Record<string, number> = {};
-  (dbVenues ?? []).forEach((v: { id: number; name: string }) => {
-    venueNameToId[v.name.toLowerCase()] = v.id;
-  });
-
-  // Fetch existing matches for this tournament (external_id → row)
-  const { data: existing } = await db.from('matches').select('id, external_id, ko_number').eq('tournament_id', tour.id);
-
-  const existingByExtId: Record<string, { id: number; ko_number: number | null }> = {};
-  (existing ?? []).forEach((m: { id: number; external_id: string; ko_number: number | null }) => {
-    existingByExtId[m.external_id] = m;
-  });
-
-  let upserted = 0;
-  const upserts = [];
-
-  for (const fm of fdMatches) {
-    const extId = String(fm.id);
-    const existing_ = existingByExtId[extId];
-
-    const isGroup = fm.stage === 'GROUP_STAGE';
-    const roundLabel = isGroup ? `Matchday ${fm.matchday ?? 1}` : (ROUND_MAP[fm.stage] ?? fm.stage);
-
-    // Decide on `decided` field
-    let decided = '';
-    if (fm.score.duration === 'EXTRA_TIME') decided = 'a.e.t.';
-    if (fm.score.duration === 'PENALTY_SHOOTOUT') decided = 'pens';
-
-    const homeScore = fm.score.fullTime.home;
-    const awayScore = fm.score.fullTime.away;
-
-    // For penalties, fullTime shows regular-time score; penalties are separate
-    const homePen = fm.score.penalties?.home ?? null;
-    const awayPen = fm.score.penalties?.away ?? null;
-
-    // Normalize TLA: football-data.org sometimes uses different codes
-    const homeTla = normalizeTla(fm.homeTeam.tla);
-    const awayTla = normalizeTla(fm.awayTeam.tla);
-
-    const venueKey = (fm.venue ?? '').toLowerCase();
-    const venueId =
-      Object.entries(venueNameToId).find(([k]) => venueKey.includes(k) || k.includes(venueKey))?.[1] ?? null;
-
-    const row = {
-      tournament_id: tour.id,
-      external_id: extId,
-      stage: isGroup ? 'group' : 'ko',
-      round_name: roundLabel,
-      group_letter: fm.group ? fm.group.replace('GROUP_', '') : null,
-      home_team_id: teamCodeToId[homeTla] ?? null,
-      away_team_id: teamCodeToId[awayTla] ?? null,
-      venue_id: venueId,
-      scheduled_at: fm.utcDate,
-      status: STATUS_MAP[fm.status] ?? fm.status,
-      home_score: homeScore,
-      away_score: awayScore,
-      home_score_ht: fm.score.halfTime.home,
-      away_score_ht: fm.score.halfTime.away,
-      home_penalties: homePen,
-      away_penalties: awayPen,
-      minute: fm.minute ? parseInt(fm.minute) : null,
-      decided,
-      // ko_number and slot refs are pre-seeded; don't overwrite
-      ...(existing_ ? {} : { ko_number: null, home_slot: null, away_slot: null }),
-    };
-
-    upserts.push(row);
-    upserted++;
-  }
-
-  if (upserts.length > 0) {
-    const { error } = await db.from('matches').upsert(upserts, { onConflict: 'external_id' });
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (tErr || !tour) {
+      insertSyncLog(db, {
+        status: 'error',
+        duration_ms: Date.now() - startTime,
+        fd_status: null,
+        match_count: null,
+        upserted: null,
+        error: tErr?.message ?? 'Tournament not found',
+      });
+      return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
     }
-  }
 
-  return NextResponse.json({ upserted });
+    // Fetch all matches from football-data.org
+    const { json: data, status: fdStatus } = await fdFetch(`/competitions/WC/matches`);
+    fdHttpStatus = fdStatus;
+    const fdMatches: FDMatch[] = (data as { matches: FDMatch[] }).matches;
+    matchCount = fdMatches.length;
+
+    // Build team-code → DB team id map
+    const { data: dbTeams } = await db.from('teams').select('id, code');
+    const teamCodeToId: Record<string, number> = {};
+    (dbTeams ?? []).forEach((t: { id: number; code: string }) => {
+      teamCodeToId[t.code] = t.id;
+    });
+
+    // Build venue name → DB venue id map
+    const { data: dbVenues } = await db.from('venues').select('id, name');
+    const venueNameToId: Record<string, number> = {};
+    (dbVenues ?? []).forEach((v: { id: number; name: string }) => {
+      venueNameToId[v.name.toLowerCase()] = v.id;
+    });
+
+    // Fetch existing matches for this tournament (external_id → row)
+    const { data: existing } = await db.from('matches').select('id, external_id, ko_number').eq('tournament_id', tour.id);
+
+    const existingByExtId: Record<string, { id: number; ko_number: number | null }> = {};
+    (existing ?? []).forEach((m: { id: number; external_id: string; ko_number: number | null }) => {
+      existingByExtId[m.external_id] = m;
+    });
+
+    let upserted = 0;
+    const upserts = [];
+
+    for (const fm of fdMatches) {
+      const extId = String(fm.id);
+      const existing_ = existingByExtId[extId];
+
+      const isGroup = fm.stage === 'GROUP_STAGE';
+      const roundLabel = isGroup ? `Matchday ${fm.matchday ?? 1}` : (ROUND_MAP[fm.stage] ?? fm.stage);
+
+      // Decide on `decided` field
+      let decided = '';
+      if (fm.score.duration === 'EXTRA_TIME') decided = 'a.e.t.';
+      if (fm.score.duration === 'PENALTY_SHOOTOUT') decided = 'pens';
+
+      const homeScore = fm.score.fullTime.home;
+      const awayScore = fm.score.fullTime.away;
+
+      // For penalties, fullTime shows regular-time score; penalties are separate
+      const homePen = fm.score.penalties?.home ?? null;
+      const awayPen = fm.score.penalties?.away ?? null;
+
+      // Normalize TLA: football-data.org sometimes uses different codes
+      const homeTla = normalizeTla(fm.homeTeam.tla);
+      const awayTla = normalizeTla(fm.awayTeam.tla);
+
+      const venueKey = (fm.venue ?? '').toLowerCase();
+      const venueId =
+        Object.entries(venueNameToId).find(([k]) => venueKey.includes(k) || k.includes(venueKey))?.[1] ?? null;
+
+      const row = {
+        tournament_id: tour.id,
+        external_id: extId,
+        stage: isGroup ? 'group' : 'ko',
+        round_name: roundLabel,
+        group_letter: fm.group ? fm.group.replace('GROUP_', '') : null,
+        home_team_id: teamCodeToId[homeTla] ?? null,
+        away_team_id: teamCodeToId[awayTla] ?? null,
+        venue_id: venueId,
+        scheduled_at: fm.utcDate,
+        status: STATUS_MAP[fm.status] ?? fm.status,
+        home_score: homeScore,
+        away_score: awayScore,
+        home_score_ht: fm.score.halfTime.home,
+        away_score_ht: fm.score.halfTime.away,
+        home_penalties: homePen,
+        away_penalties: awayPen,
+        minute: fm.minute ? parseInt(fm.minute) : null,
+        decided,
+        // ko_number and slot refs are pre-seeded; don't overwrite
+        ...(existing_ ? {} : { ko_number: null, home_slot: null, away_slot: null }),
+      };
+
+      upserts.push(row);
+      upserted++;
+    }
+
+    if (upserts.length > 0) {
+      const { error } = await db.from('matches').upsert(upserts, { onConflict: 'external_id' });
+      if (error) {
+        insertSyncLog(db, {
+          status: 'error',
+          duration_ms: Date.now() - startTime,
+          fd_status: fdHttpStatus,
+          match_count: matchCount,
+          upserted: null,
+          error: error.message,
+        });
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+    }
+
+    insertSyncLog(db, {
+      status: 'ok',
+      duration_ms: Date.now() - startTime,
+      fd_status: fdHttpStatus,
+      match_count: matchCount,
+      upserted,
+      error: null,
+    });
+
+    return NextResponse.json({ upserted });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    insertSyncLog(db, {
+      status: 'error',
+      duration_ms: Date.now() - startTime,
+      fd_status: fdHttpStatus,
+      match_count: matchCount,
+      upserted: null,
+      error: message,
+    });
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 // Vercel Cron uses GET; manual testing can use POST
