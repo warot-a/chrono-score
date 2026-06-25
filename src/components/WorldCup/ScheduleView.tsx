@@ -101,7 +101,13 @@ function MatchRow({ tour, m, now, showDate }: { tour: Tournament; m: Match; now:
 
   if (searchUrl) {
     return (
-      <a href={searchUrl} target="_blank" rel="noopener noreferrer" title="Search this match on Google" style={{ display: 'contents' }}>
+      <a
+        href={searchUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Search this match on Google"
+        style={{ display: 'contents' }}
+      >
         {row}
       </a>
     );

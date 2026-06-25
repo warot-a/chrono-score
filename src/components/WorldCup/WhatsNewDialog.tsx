@@ -163,12 +163,12 @@ export function WhatsNewDialog() {
         <h2 className="wn-title">What&rsquo;s new</h2>
 
         <ul className="wn-list">
-            {CHANGELOG.items.map((item) => (
-              <li key={item}>
-                <span className="wn-spark">✦</span>
-                <span>{item}</span>
-              </li>
-            ))}
+          {CHANGELOG.items.map((item) => (
+            <li key={item}>
+              <span className="wn-spark">✦</span>
+              <span>{item}</span>
+            </li>
+          ))}
         </ul>
 
         <div className="wn-foot">
