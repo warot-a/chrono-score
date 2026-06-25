@@ -1,7 +1,36 @@
 import Image from 'next/image';
 import { Tournament, Match, StandingRow } from '@/lib/engine';
 
+// ─── Private constants ───────────────────────────────────────────────────────
+
 const LIVE_MS = 2 * 3600 * 1000;
+
+const SLOT_LABEL: Record<string, string> = {
+  sE: '3rd A/B/C/D/F',
+  sI: '3rd C/D/F/G/H',
+  sA: '3rd C/E/F/H/I',
+  sL: '3rd E/H/I/J/K',
+  sD: '3rd B/E/F/I/J',
+  sG: '3rd A/E/H/I/J',
+  sB: '3rd E/F/G/I/J',
+  sK: '3rd D/E/I/J/L',
+};
+
+interface MatchView {
+  hCode: string | null;
+  aCode: string | null;
+  hLabel: string;
+  aLabel: string;
+  played: boolean;
+  live: boolean;
+  homeScore: number;
+  awayScore: number;
+  decided: string;
+  winnerCode?: string;
+  penWinner?: string | null;
+}
+
+// ─── Exports ─────────────────────────────────────────────────────────────────
 
 export function phaseForDay(d: number): [string, string] {
   if (d < 7) return ['Group Stage', 'Matchday 1'];
@@ -15,17 +44,6 @@ export function phaseForDay(d: number): [string, string] {
   return ['Knockout', 'The Final'];
 }
 
-export const SLOT_LABEL: Record<string, string> = {
-  sE: '3rd A/B/C/D/F',
-  sI: '3rd C/D/F/G/H',
-  sA: '3rd C/E/F/H/I',
-  sL: '3rd E/H/I/J/K',
-  sD: '3rd B/E/F/I/J',
-  sG: '3rd A/E/H/I/J',
-  sB: '3rd E/F/G/I/J',
-  sK: '3rd D/E/I/J/L',
-};
-
 export function groupComplete(tour: Tournament, g: string, now: number): boolean {
   return tour.matches.every((m) => !(m.stage === 'group' && m.group === g) || m.timestamp <= now);
 }
@@ -33,68 +51,11 @@ export function allGroupsComplete(tour: Tournament, now: number): boolean {
   return tour.GROUP_LETTERS.every((g) => groupComplete(tour, g, now));
 }
 
-function koShort(tour: Tournament, no: number): string {
-  const m = tour.ko[no];
-  const idx: Record<string, string> = {
-    'Round of 32': 'R32',
-    'Round of 16': 'R16',
-    'Quarter-final': 'QF',
-    'Semi-final': 'SF',
-    'Third place': '3rd',
-    Final: 'Final',
-  };
-  return (idx[m.round] || m.round) + ' ' + no;
-}
-
 export function koFT(tour: Tournament, no: number, now: number): boolean {
   const m = tour.ko[no];
   if (!m) return false;
-  const { h, a } = koTeams(tour, m, now);
+  const { h, a } = knockedOutTeams(tour, m, now);
   return !!(h.code && a.code && m.timestamp <= now);
-}
-
-export function resolveRef(tour: Tournament, ref: string, now: number): { code: string | null; label: string } {
-  const [k, v] = ref.split(':');
-  if (k === 'W') return { code: groupComplete(tour, v, now) ? tour.winner[v] : null, label: 'Winners Group ' + v };
-  if (k === 'R') return { code: groupComplete(tour, v, now) ? tour.runner[v] : null, label: 'Runners-up Group ' + v };
-  if (k === '3')
-    return {
-      code: allGroupsComplete(tour, now) ? tour.thirdGroupToCode[tour.slotAssign[v]] : null,
-      label: SLOT_LABEL[v] || '3rd place',
-    };
-  if (k === 'M') {
-    const m = tour.ko[Number(v)];
-    return {
-      code: koFT(tour, Number(v), now) ? m.winnerCode || null : null,
-      label: 'Winner of ' + koShort(tour, Number(v)),
-    };
-  }
-  if (k === 'L') {
-    const m = tour.ko[Number(v)];
-    return {
-      code: koFT(tour, Number(v), now) ? m.loserCode || null : null,
-      label: 'Loser of ' + koShort(tour, Number(v)),
-    };
-  }
-  return { code: null, label: 'TBD' };
-}
-
-export function koTeams(tour: Tournament, m: Match, now: number) {
-  return { h: resolveRef(tour, m.refs![0], now), a: resolveRef(tour, m.refs![1], now) };
-}
-
-export interface MatchView {
-  hCode: string | null;
-  aCode: string | null;
-  hLabel: string;
-  aLabel: string;
-  played: boolean;
-  live: boolean;
-  homeScore: number;
-  awayScore: number;
-  decided: string;
-  winnerCode?: string;
-  penWinner?: string | null;
 }
 
 export function matchView(tour: Tournament, m: Match, now: number): MatchView {
@@ -113,7 +74,7 @@ export function matchView(tour: Tournament, m: Match, now: number): MatchView {
       decided: '',
     };
   }
-  const { h, a } = koTeams(tour, m, now);
+  const { h, a } = knockedOutTeams(tour, m, now);
   const bothKnown = !!(h.code && a.code);
   const played = bothKnown && m.timestamp <= now;
   const live = played && now < m.timestamp + LIVE_MS;
@@ -162,7 +123,9 @@ export function liveStandings(tour: Tournament, g: string, now: number): Standin
         a.Pts++;
       }
     });
+
   Object.values(rows).forEach((r) => (r.GD = r.GF - r.GA));
+
   return Object.values(rows).sort((a, b) => {
     if (b.Pts !== a.Pts) return b.Pts - a.Pts;
     if (b.GD !== a.GD) return b.GD - a.GD;
@@ -219,4 +182,49 @@ export function Flag({ code, tour, size }: { code: string; tour: Tournament; siz
       {team?.f ?? '🏳️'}
     </span>
   );
+}
+
+// ─── Private helpers (depend on exports above) ───────────────────────────────
+
+function koShort(tour: Tournament, no: number): string {
+  const m = tour.ko[no];
+  const idx: Record<string, string> = {
+    'Round of 32': 'R32',
+    'Round of 16': 'R16',
+    'Quarter-final': 'QF',
+    'Semi-final': 'SF',
+    'Third place': '3rd',
+    Final: 'Final',
+  };
+  return (idx[m.round] || m.round) + ' ' + no;
+}
+
+function resolveRef(tour: Tournament, ref: string, now: number): { code: string | null; label: string } {
+  const [k, v] = ref.split(':');
+  if (k === 'W') return { code: groupComplete(tour, v, now) ? tour.winner[v] : null, label: `Winners Group ${v}` };
+  if (k === 'R') return { code: groupComplete(tour, v, now) ? tour.runner[v] : null, label: `2nd Group ${v}` };
+  if (k === '3')
+    return {
+      code: allGroupsComplete(tour, now) ? tour.thirdGroupToCode[tour.slotAssign[v]] : null,
+      label: SLOT_LABEL[v] || '3rd place',
+    };
+  if (k === 'M') {
+    const m = tour.ko[Number(v)];
+    return {
+      code: koFT(tour, Number(v), now) ? m.winnerCode || null : null,
+      label: 'Winner of ' + koShort(tour, Number(v)),
+    };
+  }
+  if (k === 'L') {
+    const m = tour.ko[Number(v)];
+    return {
+      code: koFT(tour, Number(v), now) ? m.loserCode || null : null,
+      label: 'Loser of ' + koShort(tour, Number(v)),
+    };
+  }
+  return { code: null, label: 'TBD' };
+}
+
+function knockedOutTeams(tour: Tournament, m: Match, now: number) {
+  return { h: resolveRef(tour, m.refs![0], now), a: resolveRef(tour, m.refs![1], now) };
 }
