@@ -143,12 +143,26 @@ async function handler(req: NextRequest) {
     });
 
     // Fetch existing matches for this tournament (external_id → row)
-    const { data: existing } = await db.from('matches').select('id, external_id, ko_number').eq('tournament_id', tour.id);
+    const { data: existing } = await db
+      .from('matches')
+      .select('id, external_id, ko_number, home_team_id, away_team_id')
+      .eq('tournament_id', tour.id);
 
-    const existingByExtId: Record<string, { id: number; ko_number: number | null }> = {};
-    (existing ?? []).forEach((m: { id: number; external_id: string; ko_number: number | null }) => {
-      existingByExtId[m.external_id] = m;
-    });
+    const existingByExtId: Record<
+      string,
+      { id: number; ko_number: number | null; home_team_id: number | null; away_team_id: number | null }
+    > = {};
+    (existing ?? []).forEach(
+      (m: {
+        id: number;
+        external_id: string;
+        ko_number: number | null;
+        home_team_id: number | null;
+        away_team_id: number | null;
+      }) => {
+        existingByExtId[m.external_id] = m;
+      },
+    );
 
     let upserted = 0;
     const upserts = [];
@@ -180,14 +194,18 @@ async function handler(req: NextRequest) {
       const venueId =
         Object.entries(venueNameToId).find(([k]) => venueKey.includes(k) || k.includes(venueKey))?.[1] ?? null;
 
+      const resolvedHomeId = teamCodeToId[homeTla] ?? null;
+      const resolvedAwayId = teamCodeToId[awayTla] ?? null;
+
       const row = {
         tournament_id: tour.id,
         external_id: extId,
         stage: isGroup ? 'group' : 'ko',
         round_name: roundLabel,
         group_letter: fm.group ? fm.group.replace('GROUP_', '') : null,
-        home_team_id: teamCodeToId[homeTla] ?? null,
-        away_team_id: teamCodeToId[awayTla] ?? null,
+        // Guard: never overwrite an existing team ID with null (API can be inconsistent)
+        home_team_id: resolvedHomeId ?? existing_?.home_team_id ?? null,
+        away_team_id: resolvedAwayId ?? existing_?.away_team_id ?? null,
         venue_id: venueId,
         scheduled_at: fm.utcDate,
         status: STATUS_MAP[fm.status] ?? fm.status,
@@ -250,7 +268,7 @@ async function handler(req: NextRequest) {
 export const GET = handler;
 export const POST = handler;
 
-// Some TLA differences between football-data.org and FIFA
+// Some TLA differences between football-data.org and FIFA/our DB codes
 const TLA_FIXES: Record<string, string> = {
   BIH: 'BIH',
   KSA: 'KSA',
@@ -260,6 +278,7 @@ const TLA_FIXES: Record<string, string> = {
   GER: 'GER',
   FRA: 'FRA',
   ARG: 'ARG',
+  URY: 'URU', // football-data.org uses URY inconsistently; our DB stores URU
 };
 function normalizeTla(tla: string): string {
   return TLA_FIXES[tla] ?? tla;
