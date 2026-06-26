@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import Image from 'next/image';
+import { useMemo, useState } from 'react';
 import { Tournament, Match } from '@/lib/engine';
 import { Flag, matchView, groupColor } from '@/lib/util';
 import { useTournamentStore, selectNowTs } from '@/store/tournamentStore';
@@ -31,8 +30,17 @@ function Score({ v }: { v: ReturnType<typeof matchView> }) {
   );
 }
 
-function MatchRow({ tour, m, now, showDate }: { tour: Tournament; m: Match; now: number; showDate?: boolean }) {
-  const v = matchView(tour, m, now);
+function MatchRow({
+  tour,
+  m,
+  v,
+  showDate,
+}: {
+  tour: Tournament;
+  m: Match;
+  v: ReturnType<typeof matchView>;
+  showDate?: boolean;
+}) {
   const tag =
     m.stage === 'group' ? (
       <span className="gbadge" style={{ background: groupColor(m.group!) }}>
@@ -121,7 +129,7 @@ function MatchBlock({
   badge,
   matches,
   tour,
-  now,
+  viewMap,
   variant = 'recent',
 }: {
   title: string;
@@ -129,7 +137,7 @@ function MatchBlock({
   badge: string;
   matches: Match[];
   tour: Tournament;
-  now: number;
+  viewMap: Map<string, ReturnType<typeof matchView>>;
   variant?: 'recent' | 'upcoming' | 'live';
 }) {
   const blockClass = variant === 'upcoming' ? 'upcoming-block' : variant === 'live' ? 'live-block' : 'today-block';
@@ -145,7 +153,7 @@ function MatchBlock({
       </div>
       <div className="mlist">
         {matches.map((m) => (
-          <MatchRow key={m.id} tour={tour} m={m} now={now} />
+          <MatchRow key={m.id} tour={tour} m={m} v={viewMap.get(m.id)!} />
         ))}
       </div>
     </div>
@@ -156,20 +164,24 @@ export function ScheduleView() {
   const tour = useTournamentStore((s) => s.tour);
   const now = useTournamentStore(selectNowTs);
   const [stage, setStage] = useState('all');
+  const [grp, setGrp] = useState('all');
 
   const TWELVE_HOURS = 23 * 60 * 60 * 1000;
+
+  // Pre-compute matchView for every match once per render to avoid redundant calls
+  // across filters, the played count, and each MatchRow render.
+  const viewMap = useMemo(() => new Map(tour.matches.map((m) => [m.id, matchView(tour, m, now)])), [tour, now]);
+
   const todayMatches = tour.matches.filter((m) => {
     if (m.timestamp > now || m.timestamp < now - TWELVE_HOURS) return false;
-    const v = matchView(tour, m, now);
-    return v.played || v.live;
+    return viewMap.get(m.id)!.played;
   });
-  const liveMatches = tour.matches.filter((m) => matchView(tour, m, now).live);
+  const liveMatches = tour.matches.filter((m) => viewMap.get(m.id)!.live);
   const upcomingMatches = tour.matches.filter((m) => {
-    const v = matchView(tour, m, now);
-    if (v.played || v.live) return false;
+    const v = viewMap.get(m.id)!;
+    if (v.played) return false;
     return m.timestamp > now && m.timestamp <= now + TWELVE_HOURS;
   });
-  const [grp, setGrp] = useState('all');
 
   const stageTabs = [
     ['all', 'All'],
@@ -202,7 +214,7 @@ export function ScheduleView() {
     byDay[idx[key]].items.push(m);
   });
 
-  const played = list.filter((m) => matchView(tour, m, now).played).length;
+  const played = list.filter((m) => viewMap.get(m.id)!.played).length;
 
   return (
     <div>
@@ -246,7 +258,7 @@ export function ScheduleView() {
           badge="● LIVE"
           matches={liveMatches}
           tour={tour}
-          now={now}
+          viewMap={viewMap}
           variant="live"
         />
       )}
@@ -257,7 +269,7 @@ export function ScheduleView() {
           badge="Recent Results"
           matches={todayMatches}
           tour={tour}
-          now={now}
+          viewMap={viewMap}
         />
       )}
       {upcomingMatches.length > 0 && (
@@ -267,7 +279,7 @@ export function ScheduleView() {
           badge="Upcoming Matches"
           matches={upcomingMatches}
           tour={tour}
-          now={now}
+          viewMap={viewMap}
           variant="upcoming"
         />
       )}
@@ -301,7 +313,7 @@ export function ScheduleView() {
               </div>
               <div className="mlist">
                 {day.items.map((m) => (
-                  <MatchRow key={m.id} tour={tour} m={m} now={now} />
+                  <MatchRow key={m.id} tour={tour} m={m} v={viewMap.get(m.id)!} />
                 ))}
               </div>
             </section>
