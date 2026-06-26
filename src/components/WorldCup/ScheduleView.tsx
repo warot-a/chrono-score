@@ -239,7 +239,7 @@ export function ScheduleView() {
           ))}
         </div>
       ) : null}
-      {stage === 'all' && liveMatches.length > 0 && (
+      {liveMatches.length > 0 && (
         <MatchBlock
           title="Live Now"
           subtitle="In Progress"
@@ -250,7 +250,7 @@ export function ScheduleView() {
           variant="live"
         />
       )}
-      {stage === 'all' && todayMatches.length > 0 && (
+      {todayMatches.length > 0 && (
         <MatchBlock
           title="Recent Results"
           subtitle={new Date(now).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
@@ -260,7 +260,7 @@ export function ScheduleView() {
           now={now}
         />
       )}
-      {stage === 'all' && upcomingMatches.length > 0 && (
+      {upcomingMatches.length > 0 && (
         <MatchBlock
           title="Upcoming"
           subtitle="Next 12 hours"
