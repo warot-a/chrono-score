@@ -77,8 +77,7 @@ async function fdFetch(path: string): Promise<FDFetchResult> {
   return { json: await res.json(), status: res.status };
 }
 
-// fire-and-forget: ไม่ await เพื่อไม่ให้กระทบ response latency
-function insertSyncLog(
+async function insertSyncLog(
   db: ReturnType<typeof supabaseAdmin>,
   log: {
     status: 'ok' | 'error';
@@ -89,7 +88,7 @@ function insertSyncLog(
     error: string | null;
   },
 ) {
-  void db.from('sync_logs').insert(log);
+  await db.from('sync_logs').insert(log);
 }
 
 async function handler(req: NextRequest) {
@@ -111,7 +110,7 @@ async function handler(req: NextRequest) {
     const { data: tour, error: tErr } = await db.from('tournaments').select('id').eq('slug', WC_SLUG).single();
 
     if (tErr || !tour) {
-      insertSyncLog(db, {
+      await insertSyncLog(db, {
         status: 'error',
         duration_ms: Date.now() - startTime,
         fd_status: null,
@@ -228,7 +227,7 @@ async function handler(req: NextRequest) {
     if (upserts.length > 0) {
       const { error } = await db.from('matches').upsert(upserts, { onConflict: 'external_id' });
       if (error) {
-        insertSyncLog(db, {
+        await insertSyncLog(db, {
           status: 'error',
           duration_ms: Date.now() - startTime,
           fd_status: fdHttpStatus,
@@ -240,7 +239,7 @@ async function handler(req: NextRequest) {
       }
     }
 
-    insertSyncLog(db, {
+    await insertSyncLog(db, {
       status: 'ok',
       duration_ms: Date.now() - startTime,
       fd_status: fdHttpStatus,
@@ -252,7 +251,7 @@ async function handler(req: NextRequest) {
     return NextResponse.json({ upserted });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    insertSyncLog(db, {
+    await insertSyncLog(db, {
       status: 'error',
       duration_ms: Date.now() - startTime,
       fd_status: fdHttpStatus,
