@@ -16,10 +16,16 @@ export function PulseCard({
 }) {
   const fin = matchView(tour, tour.ko[104], nowTs);
   const champ = fin.played ? fin.winnerCode : null;
-  const upcoming = tour.matches.find((m) => {
+  let upcoming: (typeof tour.matches)[0] | undefined;
+  let upcomingView: ReturnType<typeof matchView> | undefined;
+  for (const m of tour.matches) {
     const v = matchView(tour, m, nowTs);
-    return !v.played && v.hCode && v.aCode;
-  });
+    if (!v.played && v.hCode && v.aCode) {
+      upcoming = m;
+      upcomingView = v;
+      break;
+    }
+  }
   const pct = Math.round((playedCount / 104) * 100);
 
   return (
@@ -42,15 +48,15 @@ export function PulseCard({
             </div>
           </div>
         </div>
-      ) : upcoming ? (
+      ) : upcoming && upcomingView ? (
         <div className="pc-next">
           <div className="pc-lbl">Coming up</div>
           <div className="pc-match">
-            <Flag code={upcoming.home} tour={tour} />
+            <Flag code={upcomingView.hCode!} tour={tour} />
             <span className="pc-vs">vs</span>
-            <Flag code={upcoming.away} tour={tour} />
+            <Flag code={upcomingView.aCode!} tour={tour} />
           </div>
-          <div className="pc-mt">{(tour.teams[upcoming.home]?.n || '') + ' · ' + upcoming.city}</div>
+          <div className="pc-mt">{upcomingView.hLabel + ' · ' + upcoming.city}</div>
         </div>
       ) : null}
     </div>
