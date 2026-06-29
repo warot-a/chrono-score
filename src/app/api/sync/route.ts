@@ -28,6 +28,8 @@ const STATUS_MAP: Record<string, string> = {
 // football-data.org stage label → our round_name
 const ROUND_MAP: Record<string, string> = {
   GROUP_STAGE: 'Matchday', // will append matchday number below
+  LAST_32: 'Round of 32',
+  LAST_16: 'Round of 16',
   ROUND_OF_32: 'Round of 32',
   ROUND_OF_16: 'Round of 16',
   QUARTER_FINALS: 'Quarter-final',
@@ -68,6 +70,31 @@ interface FDFetchResult {
   status: number;
 }
 
+interface UpsertedMatchSummary {
+  round_name: string;
+  home_team_id: number | null;
+  away_team_id: number | null;
+  scheduled_at: string;
+  status: string;
+  home_score: number | null;
+  away_score: number | null;
+}
+
+function formatApiDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function getMatchFetchDateRange(now = new Date()) {
+  const dateTo = new Date(now);
+  const dateFrom = new Date(now);
+  dateFrom.setUTCDate(dateFrom.getUTCDate() - 1);
+
+  return {
+    dateFrom: formatApiDate(dateFrom),
+    dateTo: formatApiDate(dateTo),
+  };
+}
+
 async function fdFetch(path: string): Promise<FDFetchResult> {
   const res = await fetch(FD_BASE + path, {
     headers: { 'X-Auth-Token': process.env.FOOTBALL_DATA_API_KEY! },
@@ -86,6 +113,7 @@ async function insertSyncLog(
     match_count: number | null;
     upserted: number | null;
     error: string | null;
+    details?: Record<string, unknown> | null;
   },
 ) {
   await db.from('sync_logs').insert(log);
@@ -121,8 +149,10 @@ async function handler(req: NextRequest) {
       return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
     }
 
-    // Fetch all matches from football-data.org
-    const { json: data, status: fdStatus } = await fdFetch(`/competitions/WC/matches`);
+    // Fetch recent matches only to keep the sync payload small.
+    const { dateFrom, dateTo } = getMatchFetchDateRange();
+    const matchParams = new URLSearchParams({ dateFrom, dateTo });
+    const { json: data, status: fdStatus } = await fdFetch(`/competitions/WC/matches?${matchParams}`);
     fdHttpStatus = fdStatus;
     const fdMatches: FDMatch[] = (data as { matches: FDMatch[] }).matches;
     matchCount = fdMatches.length;
@@ -165,6 +195,7 @@ async function handler(req: NextRequest) {
 
     let upserted = 0;
     const upserts = [];
+    const upsertedMatches: UpsertedMatchSummary[] = [];
 
     for (const fm of fdMatches) {
       const extId = String(fm.id);
@@ -221,6 +252,15 @@ async function handler(req: NextRequest) {
       };
 
       upserts.push(row);
+      upsertedMatches.push({
+        round_name: row.round_name,
+        home_team_id: row.home_team_id,
+        away_team_id: row.away_team_id,
+        scheduled_at: row.scheduled_at,
+        status: row.status,
+        home_score: row.home_score,
+        away_score: row.away_score,
+      });
       upserted++;
     }
 
@@ -246,9 +286,10 @@ async function handler(req: NextRequest) {
       match_count: matchCount,
       upserted,
       error: null,
+      details: { upserted_matches: upsertedMatches },
     });
 
-    return NextResponse.json({ upserted });
+    return NextResponse.json({ upserted, upserted_matches: upsertedMatches });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await insertSyncLog(db, {
