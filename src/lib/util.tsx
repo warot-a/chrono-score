@@ -45,7 +45,7 @@ export function phaseForDay(d: number): [string, string] {
 }
 
 export function groupComplete(tour: Tournament, g: string, now: number): boolean {
-  return tour.matches.every((m) => !(m.stage === 'group' && m.group === g) || m.timestamp <= now);
+  return tour.matches.every((m) => !(m.stage === 'group' && m.group === g) || matchFinished(m, now));
 }
 export function allGroupsComplete(tour: Tournament, now: number): boolean {
   return tour.GROUP_LETTERS.every((g) => groupComplete(tour, g, now));
@@ -55,13 +55,13 @@ export function koFT(tour: Tournament, no: number, now: number): boolean {
   const m = tour.ko[no];
   if (!m) return false;
   const { h, a } = knockedOutTeams(tour, m, now);
-  return !!(h.code && a.code && m.timestamp <= now);
+  return !!(h.code && a.code && matchFinished(m, now));
 }
 
 export function matchView(tour: Tournament, m: Match, now: number): MatchView {
   if (m.stage === 'group') {
-    const played = m.timestamp <= now;
-    const live = played && now < m.timestamp + LIVE_MS;
+    const played = matchFinished(m, now);
+    const live = matchLive(m, now);
     return {
       hCode: m.home,
       aCode: m.away,
@@ -74,10 +74,12 @@ export function matchView(tour: Tournament, m: Match, now: number): MatchView {
       decided: '',
     };
   }
-  const { h, a } = knockedOutTeams(tour, m, now);
+  const resolved = knockedOutTeams(tour, m, now);
+  const h = m.home ? { code: m.home, label: tour.teams[m.home]?.n ?? m.home } : resolved.h;
+  const a = m.away ? { code: m.away, label: tour.teams[m.away]?.n ?? m.away } : resolved.a;
   const bothKnown = !!(h.code && a.code);
-  const played = bothKnown && m.timestamp <= now;
-  const live = played && now < m.timestamp + LIVE_MS;
+  const played = bothKnown && matchFinished(m, now);
+  const live = bothKnown && matchLive(m, now);
   return {
     hCode: h.code,
     aCode: a.code,
@@ -97,7 +99,7 @@ export function liveStandings(tour: Tournament, g: string, now: number): Standin
   const rows: Record<string, StandingRow> = {};
   tour.GROUPS[g].forEach((k) => (rows[k] = { code: k, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, GD: 0, Pts: 0 }));
   tour.matches
-    .filter((m) => m.stage === 'group' && m.group === g && m.timestamp <= now)
+    .filter((m) => m.stage === 'group' && m.group === g && matchStarted(m, now))
     .forEach((m) => {
       const h = rows[m.home],
         a = rows[m.away];
@@ -197,6 +199,25 @@ function koShort(tour: Tournament, no: number): string {
     Final: 'Final',
   };
   return (idx[m.round] || m.round) + ' ' + no;
+}
+
+function hasDbStatus(m: Match): boolean {
+  return typeof m.status === 'string' && m.status.length > 0;
+}
+
+function matchFinished(m: Match, now: number): boolean {
+  if (hasDbStatus(m)) return m.status === 'FINISHED';
+  return m.timestamp <= now;
+}
+
+function matchLive(m: Match, now: number): boolean {
+  if (hasDbStatus(m)) return m.status === 'LIVE' || m.status === 'PAUSED';
+  return m.timestamp <= now && now < m.timestamp + LIVE_MS;
+}
+
+function matchStarted(m: Match, now: number): boolean {
+  if (hasDbStatus(m)) return m.status === 'FINISHED' || m.status === 'LIVE' || m.status === 'PAUSED';
+  return m.timestamp <= now;
 }
 
 function resolveRef(tour: Tournament, ref: string, now: number): { code: string | null; label: string } {

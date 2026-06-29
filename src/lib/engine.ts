@@ -162,6 +162,7 @@ export interface Match {
   city: string;
   countryFlag: string;
   broadcasters?: string[];
+  status?: string;
   // ko-only
   no?: number;
   refs?: string[];

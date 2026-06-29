@@ -11,6 +11,10 @@ import { DBMatch, DBTeam, DBVenue, DBTournamentTeam } from '@/lib/supabase';
 
 const DAY0 = Date.UTC(2026, 5, 11, 0, 0, 0); // 2026-06-11 00:00 UTC
 const DAYMS = 86_400_000;
+const ROUND_LABELS: Record<string, string> = {
+  LAST_32: 'Round of 32',
+  LAST_16: 'Round of 16',
+};
 
 function dstr(t: number): string {
   return new Date(t).toLocaleDateString('en-US', {
@@ -126,8 +130,20 @@ export function buildFromDB(
   });
   const GROUP_LETTERS = Object.keys(GROUPS).sort();
 
-  // 4. Build Match[]
-  const matches: Match[] = dbMatches.map((dm) => {
+  const normalizedMatches = dbMatches.map((dm) => ({
+    ...dm,
+    round_name: ROUND_LABELS[dm.round_name] ?? dm.round_name,
+  }));
+  const realKoRounds = new Set(
+    normalizedMatches
+      .filter((dm) => dm.stage === 'ko' && dm.external_id && (dm.home_team_id || dm.away_team_id))
+      .map((dm) => dm.round_name),
+  );
+  const displayMatches = normalizedMatches.filter(
+    (dm) => !(dm.stage === 'ko' && !dm.external_id && realKoRounds.has(dm.round_name)),
+  );
+
+  function toMatch(dm: DBMatch): Match {
     const homeCode = dm.home_team_id ? (teamById[dm.home_team_id] ?? '') : '';
     const awayCode = dm.away_team_id ? (teamById[dm.away_team_id] ?? '') : '';
     const venue = dm.venue_id ? venueById[dm.venue_id] : null;
@@ -147,6 +163,7 @@ export function buildFromDB(
       city: venue?.city ?? '',
       countryFlag: venue ? countryFlag(venue.country) : '🏟️',
       broadcasters: dm.broadcasters?.length ? dm.broadcasters : undefined,
+      status: dm.status,
     };
 
     if (dm.stage === 'ko') {
@@ -183,8 +200,11 @@ export function buildFromDB(
     }
 
     return base;
-  });
+  }
 
+  // 4. Build Match[]
+  const matches: Match[] = displayMatches.map(toMatch);
+  const koMatches: Match[] = normalizedMatches.map(toMatch);
   matches.sort((a, b) => a.timestamp - b.timestamp);
 
   // 5. Compute group standings from finished group matches
@@ -198,7 +218,8 @@ export function buildFromDB(
 
   matches
     .filter(
-      (m) => m.stage === 'group' && m.group && dbMatches.find((dm) => `M${dm.id}` === m.id && dm.status === 'FINISHED'),
+      (m) =>
+        m.stage === 'group' && m.group && displayMatches.find((dm) => `M${dm.id}` === m.id && dm.status === 'FINISHED'),
     )
     .forEach((m) => {
       const rows = standingsMap[m.group!];
@@ -273,7 +294,7 @@ export function buildFromDB(
 
   // 7. ko record (indexed by ko_number 73–104)
   const ko: Record<number, Match> = {};
-  matches.forEach((m) => {
+  koMatches.forEach((m) => {
     if (m.stage === 'ko' && m.no != null) ko[m.no] = m;
   });
 
