@@ -1,5 +1,35 @@
 'use client';
 
+const KNOCKOUT_STAGE_URL = 'https://en.wikipedia.org/wiki/2026_FIFA_World_Cup#Knockout_stage';
+
+export function BracketView() {
+  return (
+    <div>
+      <div className="sec-head">
+        <div>
+          <h2>Knockout Bracket</h2>
+          <div className="sub">The bracket view is temporarily unavailable while we repair live knockout data.</div>
+        </div>
+      </div>
+
+      <section className="bracket-placeholder" aria-labelledby="bracket-placeholder-title">
+        <div className="bracket-placeholder-kicker">Under construction</div>
+        <h3 id="bracket-placeholder-title">Knockout bracket is being rebuilt</h3>
+        <p>Please use the official knockout stage reference for now.</p>
+        <a href={KNOCKOUT_STAGE_URL} target="_blank" rel="noopener noreferrer" className="bracket-placeholder-link">
+          Open knockout stage on Wikipedia
+        </a>
+      </section>
+    </div>
+  );
+}
+
+/*
+Temporarily disabled bracket implementation. Keep this here so the bracket can
+be repaired without recovering the old component from git history.
+
+'use client';
+
 import { useState, useRef, useCallback, useLayoutEffect, MutableRefObject } from 'react';
 import { Tournament } from '@/lib/engine';
 import { Flag, matchView, koFT } from '@/lib/util';
@@ -304,3 +334,4 @@ export function BracketView() {
     </div>
   );
 }
+*/

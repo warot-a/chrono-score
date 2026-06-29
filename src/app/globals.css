@@ -1305,6 +1305,48 @@ tr.out {
 }
 
 /* ---------- Bracket ---------- */
+.bracket-placeholder {
+  display: grid;
+  place-items: center;
+  gap: 14px;
+  min-height: 360px;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 44px 20px;
+}
+.bracket-placeholder-kicker {
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.bracket-placeholder h3 {
+  font-family: var(--font-anton), 'Anton', sans-serif;
+  font-size: clamp(24px, 4vw, 38px);
+  text-transform: uppercase;
+}
+.bracket-placeholder p {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.bracket-placeholder-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 8px;
+  background: var(--gold);
+  color: #0a1a07;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
 .bracket-scroll {
   overflow-x: auto;
   padding: 6px 2px 22px;
